@@ -1,0 +1,42 @@
+# ========================
+# 1. Environment Variables
+# ========================
+.env
+.env*
+.venvz
+__pycache__/
+
+
+logs/
+*.log
+.env
+# ========================
+# 2. Virtual Environment
+# ========================
+.venv/
+venv/
+env/
+
+# ========================
+# 3. Python Cache Files
+# ========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ========================
+# 4. Uploaded Files (Images)
+# ========================
+app/static/uploads/products/*
+app/static/uploads/profiles/*
+!app/static/uploads/products/.gitkeep
+!app/static/uploads/profiles/.gitkeep
+
+# ========================
+# 5. IDE & OS Files
+# ========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
