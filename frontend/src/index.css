@@ -36,6 +36,17 @@
     box-sizing: border-box;
   }
 
+  /* ── Hide native number input spinners everywhere ─────────── */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
   /* Disable transition on page load to prevent flash */
   .no-transition * {
     transition: none !important;
@@ -53,13 +64,68 @@
   }
 
   /* ── Dark mode base ───────────────────────────────────────── */
-  /* Sophisticated slate-900 dark — NOT pure black */
   .dark body {
     @apply bg-slate-900 text-slate-100;
   }
 
   a {
     @apply no-underline;
+  }
+
+  /* ── Global branded scrollbar ─────────────────────────────── */
+  /* Webkit (Chrome, Edge, Safari) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #1e293b;          /* slate-800 — dark track */
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #f97316;          /* orange-500 — brand colour */
+    border-radius: 999px;
+    border: 2px solid #1e293b;    /* gap between thumb and track */
+    transition: background 0.2s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ea580c;          /* orange-600 on hover */
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: #1e293b;
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #f97316 #1e293b;   /* thumb track */
+  }
+
+  /* Light mode overrides — lighter track so it doesn't look odd */
+  html:not(.dark) ::-webkit-scrollbar-track {
+    background: #f1f5f9;          /* slate-100 */
+    border-radius: 999px;
+  }
+
+  html:not(.dark) ::-webkit-scrollbar-thumb {
+    background: #f97316;
+    border: 2px solid #f1f5f9;
+  }
+
+  html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+    background: #ea580c;
+  }
+
+  html:not(.dark) ::-webkit-scrollbar-corner {
+    background: #f1f5f9;
+  }
+
+  html:not(.dark) * {
+    scrollbar-color: #f97316 #f1f5f9;
   }
 }
 
@@ -71,6 +137,24 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* ── iOS safe-area insets ─────────────────────────────────── */
+  /* pb-safe: padding-bottom = safe-area-inset-bottom (iPhone home bar) */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* pt-safe: padding-top = safe-area-inset-top (iPhone notch) */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* ── Bottom nav body offset (mobile only) ─────────────────── */
+  /* Prevents content from hiding behind the fixed bottom nav */
+  @media (max-width: 639px) {
+    .has-bottom-nav {
+      padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    }
   }
 
   /* ── Line clamp ───────────────────────────────────────────── */

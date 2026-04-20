@@ -30,7 +30,7 @@ def update_product_action(product_uuid: str):
             return error_response('Invalid product UUID', 400)
 
         product = Product.query.filter_by(
-            uuid=product_uuid, seller_id=seller.id, is_active=True
+            uuid=product_uuid, seller_id=seller.id
         ).first()
         if not product:
             return error_response('Product not found', 404)
@@ -65,6 +65,14 @@ def update_product_action(product_uuid: str):
         access_error = ensure_seller_category_access(seller.id, category.id, category.name)
         if access_error:
             return access_error
+
+        # ── is_active (listing status) ────────────────────────────────────
+        is_active_raw = payload.get('is_active')
+        if is_active_raw is not None:
+            if isinstance(is_active_raw, bool):
+                product.is_active = is_active_raw
+            else:
+                product.is_active = str(is_active_raw).lower() == 'true'
 
         # ── Apply field updates ───────────────────────────────────────────
         product.name        = name

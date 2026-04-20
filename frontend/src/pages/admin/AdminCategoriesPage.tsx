@@ -21,12 +21,12 @@ export function AdminCategoriesPage() {
 
   // Create modal
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ name: '', description: '' });
+  const [createForm, setCreateForm] = useState({ name: '', description: '', icon: '' });
   const [creating,   setCreating]   = useState(false);
 
   // Edit modal
   const [editTarget, setEditTarget] = useState<Category | null>(null);
-  const [editForm,   setEditForm]   = useState({ name: '', description: '' });
+  const [editForm,   setEditForm]   = useState({ name: '', description: '', icon: '' });
   const [saving,     setSaving]     = useState(false);
 
   // Delete confirm
@@ -65,7 +65,7 @@ export function AdminCategoriesPage() {
       await adminApi.createCategory(createForm);
       toast.success('Category created!');
       setShowCreate(false);
-      setCreateForm({ name: '', description: '' });
+      setCreateForm({ name: '', description: '', icon: '' });
       fetchCategories();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -76,7 +76,7 @@ export function AdminCategoriesPage() {
   // ── Edit ──────────────────────────────────────────────────
   const openEdit = (cat: Category) => {
     setEditTarget(cat);
-    setEditForm({ name: cat.name, description: cat.description ?? '' });
+    setEditForm({ name: cat.name, description: cat.description ?? '', icon: cat.icon ?? '' });
   };
 
   const handleEdit = async (e: React.FormEvent) => {
@@ -173,8 +173,11 @@ export function AdminCategoriesPage() {
                   <tr key={cat.uuid} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${!isActive ? 'opacity-50' : ''}`}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
-                        <div className={`p-1.5 rounded-lg ${isActive ? 'bg-orange-50 dark:bg-orange-500/10' : 'bg-gray-100 dark:bg-slate-700'}`}>
-                          <Tag size={14} className={isActive ? 'text-orange-500' : 'text-gray-400 dark:text-slate-500'} />
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0 ${isActive ? 'bg-orange-50 dark:bg-orange-500/10' : 'bg-gray-100 dark:bg-slate-700'}`}>
+                          {cat.icon
+                            ? <span>{cat.icon}</span>
+                            : <Tag size={14} className={isActive ? 'text-orange-500' : 'text-gray-400 dark:text-slate-500'} />
+                          }
                         </div>
                         <span className="font-semibold text-gray-800 dark:text-slate-200">{cat.name}</span>
                       </div>
@@ -227,13 +230,26 @@ export function AdminCategoriesPage() {
       {/* ── Create Modal ── */}
       <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="Create New Category">
         <form onSubmit={handleCreate} className="space-y-4">
-          <Input
-            label="Category Name"
-            placeholder="e.g. Electronics"
-            value={createForm.name}
-            onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-            required
-          />
+          <div className="flex gap-3">
+            <div className="w-20 shrink-0">
+              <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">Icon</label>
+              <input
+                type="text" maxLength={4} placeholder="📱"
+                value={createForm.icon}
+                onChange={(e) => setCreateForm({ ...createForm, icon: e.target.value })}
+                className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2.5 text-2xl text-center bg-white dark:bg-slate-800 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 transition-colors"
+              />
+            </div>
+            <div className="flex-1">
+              <Input
+                label="Category Name"
+                placeholder="e.g. Electronics"
+                value={createForm.name}
+                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                required
+              />
+            </div>
+          </div>
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">Description (optional)</label>
             <textarea
@@ -244,6 +260,12 @@ export function AdminCategoriesPage() {
               className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 resize-none transition-colors"
             />
           </div>
+          {(createForm.icon || createForm.name) && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-200 dark:border-orange-500/30">
+              {createForm.icon && <span className="text-xl">{createForm.icon}</span>}
+              <span className="text-sm font-medium text-orange-700 dark:text-orange-400">{createForm.name || 'Category name'}</span>
+            </div>
+          )}
           <div className="flex gap-3">
             <Button type="button" variant="ghost" onClick={() => setShowCreate(false)} className="flex-1">Cancel</Button>
             <Button type="submit" loading={creating} className="flex-1">Create</Button>
@@ -254,12 +276,25 @@ export function AdminCategoriesPage() {
       {/* ── Edit Modal ── */}
       <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title="Edit Category">
         <form onSubmit={handleEdit} className="space-y-4">
-          <Input
-            label="Category Name"
-            value={editForm.name}
-            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-            required
-          />
+          <div className="flex gap-3">
+            <div className="w-20 shrink-0">
+              <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">Icon</label>
+              <input
+                type="text" maxLength={4} placeholder="📱"
+                value={editForm.icon}
+                onChange={(e) => setEditForm({ ...editForm, icon: e.target.value })}
+                className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2.5 text-2xl text-center bg-white dark:bg-slate-800 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 transition-colors"
+              />
+            </div>
+            <div className="flex-1">
+              <Input
+                label="Category Name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                required
+              />
+            </div>
+          </div>
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">Description</label>
             <textarea
@@ -269,6 +304,12 @@ export function AdminCategoriesPage() {
               className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 resize-none transition-colors"
             />
           </div>
+          {(editForm.icon || editForm.name) && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-200 dark:border-orange-500/30">
+              {editForm.icon && <span className="text-xl">{editForm.icon}</span>}
+              <span className="text-sm font-medium text-orange-700 dark:text-orange-400">{editForm.name}</span>
+            </div>
+          )}
           <div className="flex gap-3">
             <Button type="button" variant="ghost" onClick={() => setEditTarget(null)} className="flex-1">Cancel</Button>
             <Button type="submit" loading={saving} className="flex-1">Save Changes</Button>

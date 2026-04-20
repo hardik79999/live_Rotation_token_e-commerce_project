@@ -142,10 +142,10 @@ export function ImageCropper({ src, onCrop, onCancel, size = 300 }: Props) {
       />
 
       {/* Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 w-full px-2">
         <button
           onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}
-          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 hover:text-white transition-colors shrink-0"
           title="Zoom out"
         >
           <ZoomOut size={16} />
@@ -155,12 +155,12 @@ export function ImageCropper({ src, onCrop, onCancel, size = 300 }: Props) {
           type="range" min={50} max={400} step={5}
           value={Math.round(zoom * 100)}
           onChange={(e) => setZoom(Number(e.target.value) / 100)}
-          className="w-28 accent-orange-500"
+          className="flex-1 accent-orange-500 cursor-pointer"
         />
 
         <button
           onClick={() => setZoom((z) => Math.min(4, z + 0.1))}
-          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 hover:text-white transition-colors shrink-0"
           title="Zoom in"
         >
           <ZoomIn size={16} />
@@ -168,7 +168,7 @@ export function ImageCropper({ src, onCrop, onCancel, size = 300 }: Props) {
 
         <button
           onClick={() => setRotation((r) => (r + 90) % 360)}
-          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 hover:text-white transition-colors shrink-0"
           title="Rotate 90°"
         >
           <RotateCw size={16} />

@@ -5,11 +5,14 @@ import { authApi } from '@/api/auth';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { LanguageSelector } from '@/components/ui/LanguageSelector';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 export function SignupPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useTranslation();
   const defaultRole = searchParams.get('role') === 'seller' ? 'seller' : 'customer';
 
   const [form, setForm] = useState({
@@ -23,13 +26,17 @@ export function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const clearError = (field: string) => {
+    if (errors[field]) setErrors((prev) => { const next = { ...prev }; delete next[field]; return next; });
+  };
+
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.username.trim()) e.username = 'Username is required';
-    if (!form.email.trim()) e.email = 'Email is required';
-    if (!form.password) e.password = 'Password is required';
-    if (form.password.length < 6) e.password = 'Password must be at least 6 characters';
-    if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
+    if (!form.username.trim()) e.username = t('auth.errors.username_required');
+    if (!form.email.trim()) e.email = t('auth.errors.email_required');
+    if (!form.password) e.password = t('auth.errors.password_required');
+    if (form.password.length < 6) e.password = t('auth.errors.password_min');
+    if (form.password !== form.confirmPassword) e.confirmPassword = t('auth.errors.passwords_no_match');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -46,11 +53,11 @@ export function SignupPage() {
         phone: form.phone || undefined,
         role: form.role,
       });
-      toast.success('Account created! Please check your email to verify.');
+      toast.success(t('auth.success.account_created'));
       navigate('/login');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Signup failed');
+      toast.error(msg || t('auth.errors.signup_failed'));
     } finally {
       setLoading(false);
     }
@@ -58,6 +65,11 @@ export function SignupPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
+      {/* Language selector — top right */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -68,11 +80,11 @@ export function SignupPage() {
               Shop<span className="text-orange-400">Hub</span>
             </span>
           </Link>
-          <p className="text-gray-400 mt-2 text-sm">Create your account</p>
+          <p className="text-gray-400 mt-2 text-sm">{t('auth.create_account')}</p>
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-2">Get started</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-2">{t('auth.get_started')}</h1>
 
           {/* Role toggle */}
           <div className="flex bg-gray-100 dark:bg-slate-700 rounded-xl p-1 mb-6">
@@ -87,79 +99,79 @@ export function SignupPage() {
                     : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                 }`}
               >
-                {r === 'customer' ? '🛒 Customer' : '🏪 Seller'}
+                {r === 'customer' ? `🛒 ${t('auth.customer')}` : `🏪 ${t('auth.seller')}`}
               </button>
             ))}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Username"
-              placeholder="johndoe"
+              label={t('auth.username')}
+              placeholder={t('auth.username_placeholder')}
               value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              onChange={(e) => { setForm({ ...form, username: e.target.value }); clearError('username'); }}
               error={errors.username}
               icon={<User size={16} />}
               autoComplete="username"
             />
             <Input
-              label="Email"
+              label={t('auth.email')}
               type="email"
-              placeholder="you@example.com"
+              placeholder={t('auth.email_placeholder')}
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) => { setForm({ ...form, email: e.target.value }); clearError('email'); }}
               error={errors.email}
               icon={<Mail size={16} />}
               autoComplete="email"
             />
             <Input
-              label="Phone (optional)"
+              label={t('auth.phone')}
               type="tel"
-              placeholder="+91 98765 43210"
+              placeholder={t('auth.phone_placeholder')}
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               icon={<Phone size={16} />}
             />
             <Input
-              label="Password"
+              label={t('auth.password')}
               type="password"
-              placeholder="Min. 6 characters"
+              placeholder={t('auth.password_min')}
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onChange={(e) => { setForm({ ...form, password: e.target.value }); clearError('password'); }}
               error={errors.password}
               icon={<Lock size={16} />}
               autoComplete="new-password"
             />
             <Input
-              label="Confirm Password"
+              label={t('auth.confirm_password')}
               type="password"
-              placeholder="Repeat password"
+              placeholder={t('auth.confirm_password_placeholder')}
               value={form.confirmPassword}
-              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+              onChange={(e) => { setForm({ ...form, confirmPassword: e.target.value }); clearError('confirmPassword'); }}
               error={errors.confirmPassword}
               icon={<Lock size={16} />}
               autoComplete="new-password"
             />
 
             <Button type="submit" loading={loading} size="lg" className="w-full">
-              Create Account
+              {t('auth.create_account_btn')}
             </Button>
           </form>
 
           {/* ── Divider ── */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-gray-200 dark:bg-slate-600" />
-            <span className="text-xs text-gray-400 dark:text-slate-400 font-medium">OR</span>
+            <span className="text-xs text-gray-400 dark:text-slate-400 font-medium">{t('auth.or')}</span>
             <div className="flex-1 h-px bg-gray-200 dark:bg-slate-600" />
           </div>
 
           {/* ── Google Sign-In ── */}
-          <GoogleSignInButton label="Sign up with Google" />
+          <GoogleSignInButton label={t('auth.google_sign_up')} />
 
           <p className="text-center text-sm text-gray-500 dark:text-slate-400 mt-6">
-            Already have an account?{' '}
-            <Link to="/login" className="text-orange-500 hover:text-orange-600 font-medium">
-              Sign in
+            {t('auth.already_account')}{' '}
+            <Link to="/login" className="text-orange-500 hover:text-orange-600 font-medium transition-colors">
+              {t('auth.sign_in_link')}
             </Link>
           </p>
         </div>

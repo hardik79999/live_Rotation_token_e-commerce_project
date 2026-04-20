@@ -3,13 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Plus, CreditCard, Truck, Smartphone, Tag, Wallet } from 'lucide-react';
 import { addressApi, orderApi, cartApi, walletApi } from '@/api/user';
 import type { Address, PaymentMethod, PromoValidateResponse } from '@/types';
-import { formatPrice } from '@/utils/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { PromoCodeInput } from '@/components/cart/PromoCodeInput';
 import { useCartStore } from '@/store/cartStore';
+import { useCurrency } from '@/hooks/useCurrency';
 import toast from 'react-hot-toast';
 
 const RAZORPAY_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID || '';
@@ -24,6 +24,7 @@ export function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { items, totalAmount, clearCart, setCart } = useCartStore();
+  const { fmt } = useCurrency();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
@@ -280,18 +281,18 @@ export function CheckoutPage() {
               {items.map((item) => (
                 <div key={item.cart_item_id} className="flex justify-between text-gray-600 dark:text-slate-400">
                   <span className="truncate max-w-[160px]">{item.product_name} × {item.quantity}</span>
-                  <span className="shrink-0">{formatPrice(item.subtotal)}</span>
+                  <span className="shrink-0">{fmt(item.subtotal)}</span>
                 </div>
               ))}
             </div>
             <div className="border-t border-gray-100 dark:border-slate-700 pt-3 space-y-2 text-sm">
               <div className="flex justify-between text-gray-600 dark:text-slate-400">
                 <span>Subtotal</span>
-                <span>{formatPrice(totalAmount)}</span>
+                <span>{fmt(totalAmount)}</span>
               </div>
               <div className="flex justify-between text-gray-600 dark:text-slate-400">
                 <span>Delivery</span>
-                <span className="text-green-600">{deliveryFee === 0 ? 'FREE' : formatPrice(deliveryFee)}</span>
+                <span className="text-green-600">{deliveryFee === 0 ? 'FREE' : fmt(deliveryFee)}</span>
               </div>
 
               {/* ── Promo code input ── */}
@@ -318,7 +319,7 @@ export function CheckoutPage() {
                   <span className="flex items-center gap-1">
                     <Tag size={12} /> {appliedPromo.code}
                   </span>
-                  <span>− {formatPrice(appliedPromo.discount_amount)}</span>
+                  <span>− {fmt(appliedPromo.discount_amount)}</span>
                 </div>
               )}
 
@@ -337,7 +338,7 @@ export function CheckoutPage() {
                           Use Wallet Balance
                         </p>
                         <p className="text-xs text-gray-500 dark:text-slate-400">
-                          Available: {formatPrice(walletBalance)}
+                          Available: {fmt(walletBalance)}
                         </p>
                       </div>
                     </div>
@@ -358,7 +359,7 @@ export function CheckoutPage() {
                   </label>
                   {useWallet && walletDeduct > 0 && (
                     <p className="text-xs text-orange-600 font-medium mt-2">
-                      − {formatPrice(walletDeduct)} will be deducted
+                      − {fmt(walletDeduct)} will be deducted
                     </p>
                   )}
                 </div>
@@ -370,14 +371,14 @@ export function CheckoutPage() {
                   <span className="flex items-center gap-1">
                     <Wallet size={12} /> Wallet
                   </span>
-                  <span>− {formatPrice(walletDeduct)}</span>
+                  <span>− {fmt(walletDeduct)}</span>
                 </div>
               )}
 
               <div className="flex justify-between font-bold text-gray-900 dark:text-slate-100 text-base pt-1 border-t border-gray-100 dark:border-slate-700">
                 <span>Total</span>
                 <span className={useWallet && walletDeduct > 0 ? 'text-green-600' : ''}>
-                  {formatPrice(grandTotal)}
+                  {fmt(grandTotal)}
                 </span>
               </div>
             </div>

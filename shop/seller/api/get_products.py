@@ -11,7 +11,7 @@ def get_products_action():
         if claims.get("role") != "seller": return error_response("Unauthorized!", 403)
 
         seller = User.query.filter_by(uuid=claims.get("user_uuid")).first()
-        products = Product.query.filter_by(seller_id=seller.id, is_active=True).order_by(Product.created_at.desc()).all()
+        products = Product.query.filter_by(seller_id=seller.id).order_by(Product.created_at.desc()).all()
         result = [serialize_seller_product(p) for p in products]
         
         return jsonify({"success": True, "message": "Products loaded.", "total_products": len(result), "data": result}), 200

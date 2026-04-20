@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   RotateCcw, CheckCircle, XCircle, Clock, ChevronDown,
-  ChevronUp, RefreshCw, AlertTriangle, Package,
+  ChevronUp, RefreshCw, AlertTriangle, Package, Search, X,
 } from 'lucide-react';
 import { adminApi } from '@/api/admin';
 import type { AdminReturnItem } from '@/types';
@@ -358,6 +358,7 @@ export function AdminReturnsPage() {
   const [loading,    setLoading]    = useState(true);
   const [tab,        setTab]        = useState<StatusTab>('pending');
   const [total,      setTotal]      = useState(0);
+  const [search,     setSearch]     = useState('');
   const [actionTarget, setActionTarget] = useState<{
     ret: AdminReturnItem;
     action: 'approve' | 'reject';
@@ -380,6 +381,14 @@ export function AdminReturnsPage() {
 
   const pendingCount = returns.filter((r) => r.status === 'pending').length;
 
+  const filtered = search.trim()
+    ? returns.filter((r) =>
+        r.customer?.username.toLowerCase().includes(search.toLowerCase()) ||
+        r.customer?.email.toLowerCase().includes(search.toLowerCase()) ||
+        r.order?.uuid.toLowerCase().includes(search.toLowerCase())
+      )
+    : returns;
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -397,6 +406,23 @@ export function AdminReturnsPage() {
         <Button variant="outline" size="sm" onClick={() => fetchReturns(tab)}>
           <RefreshCw size={14} /> Refresh
         </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search by customer or order ID…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-8 py-2 border border-gray-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 transition-colors"
+        />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
+            <X size={13} />
+          </button>
+        )}
       </div>
 
       {/* Status tabs */}
@@ -434,7 +460,7 @@ export function AdminReturnsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {returns.map((ret) => (
+          {filtered.map((ret) => (
             <ReturnCard
               key={ret.uuid}
               ret={ret}

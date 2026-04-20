@@ -39,6 +39,7 @@ def list_categories_action():
                 "uuid":        c.uuid,
                 "name":        c.name,
                 "description": c.description,
+                "icon":        c.icon,
                 "is_active":   c.is_active,
                 "created_at":  c.created_at.isoformat() if c.created_at else None,
             }
@@ -68,6 +69,7 @@ def update_category_action(category_uuid: str):
         data        = request.get_json() or {}
         new_name    = (data.get("name")        or "").strip()
         new_desc    = (data.get("description") or "").strip()
+        new_icon    = data.get("icon")   # None means "don't change"; "" means "clear"
 
         if new_name and new_name.lower() != category.name.lower():
             conflict = Category.query.filter(
@@ -81,6 +83,9 @@ def update_category_action(category_uuid: str):
         if new_desc is not None:
             category.description = new_desc or None
 
+        if new_icon is not None:
+            category.icon = new_icon.strip() or None
+
         category.updated_by = admin.id
         db.session.commit()
 
@@ -90,6 +95,7 @@ def update_category_action(category_uuid: str):
                 "uuid":        category.uuid,
                 "name":        category.name,
                 "description": category.description,
+                "icon":        category.icon,
                 "is_active":   category.is_active,
             },
             status_code=200,

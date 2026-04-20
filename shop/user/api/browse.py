@@ -36,7 +36,7 @@ CACHE_KEY_PRODUCTS   = 'catalog:products'   # prefix — full key includes qs ha
 def get_categories_action():
     try:
         categories = Category.query.filter_by(is_active=True).all()
-        result = [{"uuid": c.uuid, "name": c.name, "description": c.description} for c in categories]
+        result = [{"uuid": c.uuid, "name": c.name, "description": c.description, "icon": c.icon} for c in categories]
         return success_response(
             message="Categories fetched successfully",
             data=result,

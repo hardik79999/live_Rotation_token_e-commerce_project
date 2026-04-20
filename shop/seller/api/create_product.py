@@ -8,7 +8,7 @@ import json
 from flask import request, jsonify, current_app
 from flask_jwt_extended import verify_jwt_in_request, get_jwt
 from shop.extensions import db
-from shop.models import Category, Product, ProductImage, Specification, User
+from shop.models import Category, Product, ProductImage, ProductVariant, Specification, User
 from shop.utils.api_response import error_response
 from shop.utils.file_handler import save_image
 from shop.utils.validators import validate_positive_number, validate_uuid
@@ -32,6 +32,7 @@ def create_product_action():
         stock_raw     = request.form.get('stock', '0')
         category_uuid = (request.form.get('category_uuid') or '').strip()
         specs_raw     = request.form.get('specifications')
+        variants_raw  = request.form.get('variants')   # JSON array of variant objects
 
         # ── Validation ────────────────────────────────────────────────────
         errors = []
@@ -79,13 +80,45 @@ def create_product_action():
                 return error_response('Invalid JSON for specifications', 400)
 
         # ── Save images ───────────────────────────────────────────────────
+        # Each file can optionally carry a variant_uuid in the field name:
+        # images[]  → shared image (no variant)
+        # images[<variant_uuid>]  → variant-specific image
         image_files = request.files.getlist('images')
-        saved_urls  = []
+        saved_urls: list[tuple[str, str | None]] = []   # (url, variant_uuid_or_None)
         for f in image_files:
             if f and f.filename:
                 url = save_image(f, folder_name='products')
                 if url:
-                    saved_urls.append(url)
+                    saved_urls.append((url, None))
+
+        # Also handle variant-keyed image fields: images[<variant_uuid>]
+        variant_image_map: dict[str, list[str]] = {}
+        for key in request.files:
+            if key.startswith('images[') and key.endswith(']'):
+                v_uuid = key[7:-1]
+                for f in request.files.getlist(key):
+                    if f and f.filename:
+                        url = save_image(f, folder_name='products')
+                        if url:
+                            variant_image_map.setdefault(v_uuid, []).append(url)
+
+        # ── Parse variants ────────────────────────────────────────────────
+        parsed_variants: list[dict] = []
+        if variants_raw:
+            try:
+                raw_list = json.loads(variants_raw) if isinstance(variants_raw, str) else variants_raw
+                if isinstance(raw_list, list):
+                    for v in raw_list:
+                        parsed_variants.append({
+                            'color_name':       (v.get('color_name') or '').strip()[:80] or None,
+                            'color_code':       (v.get('color_code') or '').strip()[:10] or None,
+                            'size':             (v.get('size')        or '').strip()[:40] or None,
+                            'additional_price': float(v.get('additional_price', 0) or 0),
+                            'stock_quantity':   max(0, int(v.get('stock_quantity', 0) or 0)),
+                            'temp_uuid':        (v.get('uuid') or '').strip(),  # client-side temp ID
+                        })
+            except (json.JSONDecodeError, ValueError, TypeError):
+                return error_response('Invalid JSON for variants', 400)
 
         # ── Persist ───────────────────────────────────────────────────────
         product = Product(
@@ -100,13 +133,46 @@ def create_product_action():
         db.session.add(product)
         db.session.flush()
 
-        for idx, url in enumerate(saved_urls):
+        # Create variants first so we can map temp_uuid → real DB id
+        temp_uuid_to_variant: dict[str, ProductVariant] = {}
+        for vd in parsed_variants:
+            variant = ProductVariant(
+                product_id       = product.id,
+                color_name       = vd['color_name'],
+                color_code       = vd['color_code'],
+                size             = vd['size'],
+                additional_price = vd['additional_price'],
+                stock_quantity   = vd['stock_quantity'],
+                created_by       = seller.id,
+            )
+            db.session.add(variant)
+            db.session.flush()
+            if vd['temp_uuid']:
+                temp_uuid_to_variant[vd['temp_uuid']] = variant
+
+        # Shared images (no variant)
+        for idx, (url, _) in enumerate(saved_urls):
             db.session.add(ProductImage(
                 product_id = product.id,
+                variant_id = None,
                 image_url  = url,
-                is_primary = (idx == 0),
+                is_primary = (idx == 0 and not parsed_variants),
+                sort_order = idx,
                 created_by = seller.id,
             ))
+
+        # Variant-specific images
+        for temp_uuid, urls in variant_image_map.items():
+            variant = temp_uuid_to_variant.get(temp_uuid)
+            for idx, url in enumerate(urls):
+                db.session.add(ProductImage(
+                    product_id = product.id,
+                    variant_id = variant.id if variant else None,
+                    image_url  = url,
+                    is_primary = (idx == 0),
+                    sort_order = idx,
+                    created_by = seller.id,
+                ))
 
         for k, v in parsed_specs:
             db.session.add(Specification(

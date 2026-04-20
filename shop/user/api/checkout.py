@@ -200,6 +200,91 @@ def checkout_action():
             from shop.utils.cache_utils import invalidate_product_catalog
             invalidate_product_catalog()
 
+            # ── Send order confirmation email to customer ─────────────────
+            try:
+                from shop.utils.email_service import (
+                    send_order_confirmation_email,
+                    send_new_order_seller_alert,
+                )
+                from shop.models import Address, Specification
+                from datetime import datetime as _dt
+
+                address_obj = Address.query.get(delivery_address.id)
+                shipping_addr_str = (
+                    f"{address_obj.full_name}, {address_obj.street}, "
+                    f"{address_obj.city}, {address_obj.state} - {address_obj.pincode}"
+                    if address_obj else "N/A"
+                )
+
+                # Build items list with images + specs for the email
+                email_items = []
+                for od in order_items_data:
+                    prod = od['product']
+                    primary_img = next(
+                        (img.image_url for img in prod.images if img.is_primary and img.is_active),
+                        next((img.image_url for img in prod.images if img.is_active), None)
+                    )
+                    specs = [
+                        {'key': s.spec_key, 'value': s.spec_value}
+                        for s in Specification.query.filter_by(product_id=prod.id, is_active=True).limit(3).all()
+                    ]
+                    email_items.append({
+                        'name':      prod.name,
+                        'qty':       od['quantity'],
+                        'price':     od['price'],
+                        'subtotal':  round(od['price'] * od['quantity'], 2),
+                        'image_url': primary_img,
+                        'specs':     specs,
+                    })
+
+                subtotal     = round(sum(i['subtotal'] for i in email_items), 2)
+                tax          = round(subtotal * 0.18, 2)
+                shipping_fee = 0.0 if subtotal >= 499 else 49.0
+                order_date   = _dt.utcnow().strftime('%d %b %Y')
+
+                send_order_confirmation_email(
+                    user_email       = user.email,
+                    customer_name    = user.username,
+                    order_uuid       = new_order.uuid,
+                    order_date       = order_date,
+                    payment_method   = 'COD',
+                    items            = email_items,
+                    subtotal         = subtotal,
+                    tax              = tax,
+                    shipping_fee     = shipping_fee,
+                    grand_total      = final_amount,
+                    shipping_address = shipping_addr_str,
+                )
+
+                # ── Notify each unique seller ─────────────────────────────
+                from collections import defaultdict
+                seller_items_map: dict = defaultdict(list)
+                for od in order_items_data:
+                    prod   = od['product']
+                    seller = User.query.get(prod.seller_id)
+                    if seller:
+                        seller_items_map[seller].append({
+                            'name':    prod.name,
+                            'qty':     od['quantity'],
+                            'price':   od['price'],
+                            'subtotal': round(od['price'] * od['quantity'], 2),
+                        })
+
+                for seller, s_items in seller_items_map.items():
+                    seller_total = round(sum(i['subtotal'] for i in s_items), 2)
+                    send_new_order_seller_alert(
+                        seller_email     = seller.email,
+                        seller_name      = seller.username,
+                        order_uuid       = new_order.uuid,
+                        order_date       = order_date,
+                        customer_name    = user.username,
+                        items            = s_items,
+                        seller_total     = seller_total,
+                        shipping_address = shipping_addr_str,
+                    )
+            except Exception as email_err:
+                current_app.logger.warning(f'Order confirmation email failed: {email_err}')
+
             return jsonify({
                 'success':        True,
                 'message':        'Order placed successfully',

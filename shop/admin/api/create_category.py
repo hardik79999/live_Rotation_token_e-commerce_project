@@ -15,6 +15,7 @@ def create_category_action():
         data = request.get_json() or {}
         name = (data.get('name') or '').strip()
         description = (data.get('description') or '').strip()
+        icon = (data.get('icon') or '').strip() or None
 
         if not name:
             return error_response("Category name is required", 400)
@@ -26,6 +27,7 @@ def create_category_action():
 
             existing_category.is_active = True
             existing_category.description = description
+            existing_category.icon = icon
             admin_uuid = claims.get("user_uuid")
             admin_user = User.query.filter_by(uuid=admin_uuid).first()
 
@@ -38,9 +40,10 @@ def create_category_action():
             return success_response(
                 message="Category reactivated successfully",
                 data={
-                    "uuid": existing_category.uuid,
-                    "name": existing_category.name,
+                    "uuid":        existing_category.uuid,
+                    "name":        existing_category.name,
                     "description": existing_category.description,
+                    "icon":        existing_category.icon,
                 },
                 status_code=200,
             )
@@ -53,8 +56,9 @@ def create_category_action():
 
         new_category = Category(
             name=name,
-            description=description,     
-            created_by=admin_user.id   
+            description=description,
+            icon=icon,
+            created_by=admin_user.id
         )
 
         db.session.add(new_category)
@@ -63,9 +67,10 @@ def create_category_action():
         return success_response(
             message="Category created successfully!",
             data={
-                "uuid": new_category.uuid,
-                "name": new_category.name,
+                "uuid":        new_category.uuid,
+                "name":        new_category.name,
                 "description": new_category.description,
+                "icon":        new_category.icon,
             },
             status_code=201,
         )

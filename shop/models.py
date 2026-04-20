@@ -126,8 +126,12 @@ class Address(BaseModel):
 
 class Category(BaseModel):
     __tablename__ = 'categories'
-    name = db.Column(db.String(100), nullable=False, unique=True)
+    name        = db.Column(db.String(100), nullable=False, unique=True)
     description = db.Column(db.Text, nullable=True)
+    icon        = db.Column(db.String(10),  nullable=True)   # emoji icon e.g. "📱"
+    parent_id   = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)  # NULL = top-level
+
+    parent   = db.relationship('Category', remote_side='Category.id', backref='subcategories', lazy=True)
     products = db.relationship('Product', backref='category', lazy=True)
 
 class SellerCategory(BaseModel):
@@ -148,18 +152,46 @@ class Product(BaseModel):
     images = db.relationship('ProductImage', backref='product', cascade="all, delete-orphan", lazy=True)
     specifications = db.relationship('Specification', backref='product', cascade="all, delete-orphan", lazy=True)
     reviews = db.relationship('Review', backref='product', lazy=True)
+    variants = db.relationship('ProductVariant', backref='product', cascade="all, delete-orphan", lazy=True, order_by='ProductVariant.id')
 
 class ProductImage(BaseModel):
     __tablename__ = 'product_images'
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    image_url = db.Column(db.String(255), nullable=False)
-    is_primary = db.Column(db.Boolean, default=False)
+    product_id  = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    variant_id  = db.Column(db.Integer, db.ForeignKey('product_variants.id'), nullable=True)  # NULL = applies to all variants
+    image_url   = db.Column(db.String(255), nullable=False)
+    is_primary  = db.Column(db.Boolean, default=False)
+    sort_order  = db.Column(db.Integer, default=0, nullable=False)
+
+class ProductVariant(BaseModel):
+    """
+    One row per SKU (colour × size combination).
+    variant_name  — human label shown in UI, e.g. "128GB · Space Gray"
+    sku_code      — internal inventory code, e.g. "IPH17PM-128-SG"
+    stock_quantity overrides Product.stock when variants exist.
+    additional_price is added on top of Product.price (can be negative for cheaper variants).
+    """
+    __tablename__ = 'product_variants'
+    product_id       = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    variant_name     = db.Column(db.String(120), nullable=True)   # e.g. "128GB · Space Gray"
+    sku_code         = db.Column(db.String(80),  nullable=True, index=True)  # e.g. "IPH17PM-128-SG"
+    color_name       = db.Column(db.String(80),  nullable=True)   # e.g. "Pacific Blue"
+    color_code       = db.Column(db.String(10),  nullable=True)   # e.g. "#0071C5"
+    size             = db.Column(db.String(40),  nullable=True)   # e.g. "XL", "256GB"
+    additional_price = db.Column(db.Float, default=0.0, nullable=False)
+    stock_quantity   = db.Column(db.Integer, default=0, nullable=False)
+
+    images = db.relationship(
+        'ProductImage',
+        primaryjoin='ProductVariant.id == foreign(ProductImage.variant_id)',
+        lazy=True,
+        viewonly=True,
+    )
 
 class Specification(BaseModel):
     __tablename__ = 'specifications'
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    spec_key = db.Column(db.String(100), nullable=False)   
-    spec_value = db.Column(db.String(255), nullable=False) 
+    spec_key   = db.Column(db.String(100), nullable=False)
+    spec_value = db.Column(db.Text, nullable=False)   # Text — supports long values like display specs
 
 
 # =================================================================================

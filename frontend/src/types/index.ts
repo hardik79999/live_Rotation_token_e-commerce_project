@@ -18,6 +18,7 @@ export interface Category {
   uuid: string;
   name: string;
   description?: string | null;
+  icon?: string | null;
   is_active?: boolean;
   created_at?: string;
 }
@@ -26,6 +27,32 @@ export interface ProductImage {
   uuid: string;
   url: string;
   is_primary: boolean;
+  sort_order?: number;
+}
+
+export interface ProductVariant {
+  uuid:             string;
+  variant_name:     string | null;   // e.g. "128GB · Space Gray"
+  sku_code:         string | null;   // e.g. "IPH17PM-128-SG"
+  color_name:       string | null;
+  color_code:       string | null;   // hex e.g. "#0071C5"
+  size:             string | null;
+  additional_price: number;
+  final_price:      number;          // base + modifier — use this for display
+  stock_quantity:   number;
+  in_stock:         boolean;
+  images:           ProductImage[];
+}
+
+export interface ProductColorSwatch {
+  color_name: string | null;
+  color_code: string | null;
+  in_stock:   boolean;
+}
+
+export interface ProductSizeOption {
+  size:     string;
+  in_stock: boolean;
 }
 
 export interface Specification {
@@ -33,19 +60,40 @@ export interface Specification {
   value: string;
 }
 
+/**
+ * A field that can be either a plain string OR a multilingual object.
+ * Backend may return: "Shoes" OR { "en": "Shoes", "hi": "जूते" }
+ */
+export type I18nField = string | Record<string, string>;
+
 export interface Product {
   uuid: string;
-  name: string;
-  description: string;
+  name: I18nField;
+  description: I18nField;
   price: number;
   stock: number;
+  // Enterprise fields (optional — present when backend supports them)
+  compare_at_price?: number | null;   // MRP / original price for discount display
+  sku?: string | null;
+  barcode?: string | null;
+  weight_kg?: number | null;
+  low_stock_threshold?: number | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  search_tags?: string[];
+  is_draft?: boolean;
   category: string;
   category_uuid: string;
+  category_icon?: string | null;
   primary_image: string | null;
   images: ProductImage[];
+  variants: ProductVariant[];
+  has_variants: boolean;
+  default_variant_uuid: string | null;  // cheapest in-stock variant
+  colors: ProductColorSwatch[];         // deduplicated palette
+  sizes:  ProductSizeOption[];          // deduplicated sizes
   specifications: Specification[];
   is_active: boolean;
-  // Seller info — returned by serialize_seller_product
   seller_uuid?: string | null;
   seller_name?: string | null;
   seller_photo?: string | null;

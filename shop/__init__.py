@@ -130,17 +130,21 @@ def create_app(config_class=Config):
     from shop import models  # noqa: F401
 
     # ── API Blueprints ────────────────────────────────────────────────────
-    from shop.auth   import auth_bp
-    from shop.admin  import admin_bp
-    from shop.seller import seller_bp
-    from shop.user   import user_bp
+    from shop.auth     import auth_bp
+    from shop.admin    import admin_bp
+    from shop.seller   import seller_bp
+    from shop.user     import user_bp
     from shop.chat.api import chat_bp
+    from shop.search   import search_bp
+    from shop.currency import currency_bp
 
-    app.register_blueprint(auth_bp,   url_prefix='/api/auth')
-    app.register_blueprint(admin_bp,  url_prefix='/api/admin')
-    app.register_blueprint(seller_bp, url_prefix='/api/seller')
-    app.register_blueprint(user_bp,   url_prefix='/api/user')
-    app.register_blueprint(chat_bp,   url_prefix='/api/chat')
+    app.register_blueprint(auth_bp,     url_prefix='/api/auth')
+    app.register_blueprint(admin_bp,    url_prefix='/api/admin')
+    app.register_blueprint(seller_bp,   url_prefix='/api/seller')
+    app.register_blueprint(user_bp,     url_prefix='/api/user')
+    app.register_blueprint(chat_bp,     url_prefix='/api/chat')
+    app.register_blueprint(search_bp,   url_prefix='/api/search')
+    app.register_blueprint(currency_bp, url_prefix='/api/currency')
 
     # ── Socket.IO event handlers ──────────────────────────────────────────
     from shop.chat import events  # noqa: F401  registers @socketio.on handlers
@@ -152,6 +156,20 @@ def create_app(config_class=Config):
     if not app.debug or _os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         from shop.utils.scheduler import init_scheduler
         init_scheduler(app)
+
+    # ── Meilisearch: connect + configure index ────────────────────────────
+    with app.app_context():
+        from shop.search.client import get_client, configure_index
+        get_client(app)        # probe connection, logs success/warning
+        configure_index(app)   # idempotent — safe to call on every startup
+
+    # ── Currency: warm the exchange-rate cache ────────────────────────────
+    with app.app_context():
+        try:
+            from shop.currency.rates import fetch_and_cache_exchange_rates
+            fetch_and_cache_exchange_rates(app)
+        except Exception as _ce:
+            app.logger.warning('Currency rate warm-up failed: %s', _ce)
 
     # ── Global error handlers ─────────────────────────────────────────────
     @app.errorhandler(400)

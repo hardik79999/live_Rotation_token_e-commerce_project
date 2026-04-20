@@ -3,6 +3,11 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
+// ── Initialize translation store on startup ───────────────────
+import { useTranslationStore } from '@/store/translationStore'
+const { language, setLanguage } = useTranslationStore.getState()
+setLanguage(language)
+
 // ── Register the Vite PWA service worker ──────────────────────
 // The virtual module 'virtual:pwa-register' is injected by vite-plugin-pwa
 // at build time.  It registers the SW and handles auto-updates.

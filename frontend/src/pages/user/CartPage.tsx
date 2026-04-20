@@ -1,19 +1,81 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, RefreshCw } from 'lucide-react';
-import { cartApi } from '@/api/user';
-import type { CartItem, PromoValidateResponse } from '@/types';
-import { getImageUrl, formatPrice } from '@/utils/image';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, RefreshCw, TrendingUp } from 'lucide-react';
+import { cartApi, browseApi } from '@/api/user';
+import type { CartItem, Product, PromoValidateResponse } from '@/types';
+import { getImageUrl } from '@/utils/image';
 import { Button } from '@/components/ui/Button';
 import { PageSpinner } from '@/components/ui/Spinner';
+import { ProductCard } from '@/components/product/ProductCard';
+import { ProductGridSkeleton } from '@/components/ui/Skeleton';
 import { PromoCodeInput } from '@/components/cart/PromoCodeInput';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
+import { useCurrency } from '@/hooks/useCurrency';
 import toast from 'react-hot-toast';
+
+// ── Smart empty state with "Trending Now" suggestions ────────
+function EmptyCartState({ reason }: { reason: 'login' | 'empty' }) {
+  const navigate = useNavigate();
+  const [trending, setTrending] = useState<Product[]>([]);
+  const [loadingT, setLoadingT] = useState(true);
+
+  useEffect(() => {
+    browseApi.getProducts({ limit: 4, sort_by: 'newest' })
+      .then((r) => setTrending(r.data.data?.slice(0, 4) ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingT(false));
+  }, []);
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-10">
+      {/* Empty state hero */}
+      <div className="text-center py-10">
+        <div className="w-20 h-20 rounded-full bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
+          <ShoppingBag size={36} className="text-orange-400" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-2">
+          {reason === 'login' ? 'Sign in to see your cart' : 'Your cart is empty'}
+        </h2>
+        <p className="text-gray-500 dark:text-slate-400 mb-6 max-w-xs mx-auto">
+          {reason === 'login'
+            ? 'Login to access your saved items and continue shopping'
+            : 'Looks like you haven\'t added anything yet'}
+        </p>
+        <Button
+          onClick={() => navigate(reason === 'login' ? '/login' : '/products')}
+          size="lg"
+        >
+          <ShoppingBag size={18} />
+          {reason === 'login' ? 'Login to Continue' : 'Browse Products'}
+        </Button>
+      </div>
+
+      {/* Trending Now */}
+      <div className="mt-8">
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp size={18} className="text-orange-500" />
+          <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">Trending Now</h3>
+          <span className="text-xs text-gray-400 dark:text-slate-500">— popular picks for you</span>
+        </div>
+        {loadingT ? (
+          <ProductGridSkeleton count={4} />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            {trending.map((p) => (
+              <ProductCard key={p.uuid} product={p} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function CartPage() {
   const { isAuthenticated } = useAuthStore();
   const { setCart, clearCart } = useCartStore();
+  const { fmt } = useCurrency();
   const navigate = useNavigate();
 
   const [items, setItems] = useState<CartItem[]>([]);
@@ -110,32 +172,14 @@ export function CartPage() {
 
   // ── Not logged in ────────────────────────────────────────────
   if (!isAuthenticated && !loading) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <ShoppingBag size={64} className="text-gray-300 dark:text-slate-600 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 dark:text-slate-400 mb-6">Please login to view your cart</p>
-        <Button onClick={() => navigate('/login')} size="lg">
-          Login to Continue
-        </Button>
-      </div>
-    );
+    return <EmptyCartState reason="login" />;
   }
 
   if (loading) return <PageSpinner />;
 
   // ── Empty cart ───────────────────────────────────────────────
   if (items.length === 0) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <ShoppingBag size={64} className="text-gray-300 dark:text-slate-600 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-200 mb-2">Your cart is empty</h2>
-        <p className="text-gray-500 dark:text-slate-400 mb-6">Add some products to get started</p>
-        <Button onClick={() => navigate('/products')} size="lg">
-          <ShoppingBag size={18} /> Browse Products
-        </Button>
-      </div>
-    );
+    return <EmptyCartState reason="empty" />;
   }
 
   const totalItems = items.reduce((s, i) => s + i.quantity, 0);
@@ -193,7 +237,7 @@ export function CartPage() {
                     {item.product_name}
                   </Link>
                   <p className="text-orange-500 font-bold mt-1 text-sm">
-                    {formatPrice(item.price)} <span className="text-gray-400 font-normal">each</span>
+                    {fmt(item.price)} <span className="text-gray-400 font-normal">each</span>
                   </p>
                 </div>
 
@@ -228,7 +272,7 @@ export function CartPage() {
 
                 {/* Subtotal + remove */}
                 <div className="text-right shrink-0 min-w-[70px]">
-                  <p className="font-bold text-gray-900 dark:text-slate-100 text-sm">{formatPrice(item.subtotal)}</p>
+                  <p className="font-bold text-gray-900 dark:text-slate-100 text-sm">{fmt(item.subtotal)}</p>
                   <button
                     onClick={() => handleUpdateQty(item, 0)}
                     disabled={isBusy}
@@ -252,17 +296,17 @@ export function CartPage() {
                 <span>
                   Subtotal ({totalItems} {totalItems === 1 ? 'item' : 'items'})
                 </span>
-                <span>{formatPrice(totalAmount)}</span>
+                <span>{fmt(totalAmount)}</span>
               </div>
               <div className="flex justify-between text-gray-600 dark:text-slate-400">
                 <span>Delivery</span>
                 <span className={deliveryFee === 0 ? 'text-green-600 font-medium' : ''}>
-                  {deliveryFee === 0 ? 'FREE' : formatPrice(deliveryFee)}
+                  {deliveryFee === 0 ? 'FREE' : fmt(deliveryFee)}
                 </span>
               </div>
               {deliveryFee > 0 && (
                 <p className="text-xs text-gray-400 dark:text-slate-500">
-                  Add {formatPrice(499 - totalAmount)} more for free delivery
+                  Add {fmt(499 - totalAmount)} more for free delivery
                 </p>
               )}
 
@@ -281,7 +325,7 @@ export function CartPage() {
               {appliedPromo && appliedPromo.discount_amount > 0 && (
                 <div className="flex justify-between text-green-600 dark:text-green-400 font-medium">
                   <span>Discount ({appliedPromo.code})</span>
-                  <span>− {formatPrice(appliedPromo.discount_amount)}</span>
+                  <span>− {fmt(appliedPromo.discount_amount)}</span>
                 </div>
               )}
 
@@ -291,14 +335,14 @@ export function CartPage() {
                   {appliedPromo && appliedPromo.discount_amount > 0 ? (
                     <>
                       <span className="line-through text-gray-400 dark:text-slate-500 font-normal text-sm mr-2">
-                        {formatPrice(totalAmount + deliveryFee)}
+                        {fmt(totalAmount + deliveryFee)}
                       </span>
                       <span className="text-green-600 dark:text-green-400">
-                        {formatPrice(appliedPromo.final_total + deliveryFee)}
+                        {fmt(appliedPromo.final_total + deliveryFee)}
                       </span>
                     </>
                   ) : (
-                    <span>{formatPrice(totalAmount + deliveryFee)}</span>
+                    <span>{fmt(totalAmount + deliveryFee)}</span>
                   )}
                 </div>
               </div>

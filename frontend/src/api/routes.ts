@@ -22,6 +22,22 @@ export const AUTH = {
   FORGOT_PASSWORD:  '/api/auth/forgot-password',
   RESET_PASSWORD:   '/api/auth/reset-password',
   DELETE_ACCOUNT:   '/api/auth/delete-account',
+  GOOGLE_EXCHANGE:  '/api/auth/google/exchange',
+} as const;
+
+// ─────────────────────────────────────────────────────────────
+// 💱 CURRENCY  —  /api/currency/*  (no auth)
+// ─────────────────────────────────────────────────────────────
+export const CURRENCY = {
+  RATES:   '/api/currency/rates',
+  REFRESH: '/api/currency/refresh',
+} as const;
+
+// ─────────────────────────────────────────────────────────────
+// 🔍 SEARCH  —  /api/search/*  (no auth)
+// ─────────────────────────────────────────────────────────────
+export const SEARCH = {
+  PRODUCTS: '/api/search/products',
 } as const;
 
 // ─────────────────────────────────────────────────────────────

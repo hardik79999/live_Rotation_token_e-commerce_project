@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Heart } from 'lucide-react';
 import type { Product } from '@/types';
-import { getImageUrl, formatPrice } from '@/utils/image';
+import { getImageUrl } from '@/utils/image';
 import { cartApi, wishlistApi } from '@/api/user';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
+import { useCurrency } from '@/hooks/useCurrency';
+import { useTranslateField } from '@/utils/translate';
 import toast from 'react-hot-toast';
 import { useState } from 'react';
 import { cn } from '@/utils/cn';
@@ -18,8 +20,12 @@ interface ProductCardProps {
 export function ProductCard({ product, onCartUpdate, initialWishlisted = false }: ProductCardProps) {
   const { isAuthenticated, user } = useAuthStore();
   const { setCart } = useCartStore();
+  const { fmt } = useCurrency();
+  const tf = useTranslateField();
   const [addingToCart, setAddingToCart] = useState(false);
   const [wishlisted, setWishlisted] = useState(initialWishlisted);
+
+  const displayName = tf(product.name);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -98,7 +104,9 @@ export function ProductCard({ product, onCartUpdate, initialWishlisted = false }
       <div className="relative aspect-square overflow-hidden bg-gray-50">
         <img
           src={getImageUrl(product.primary_image)}
-          alt={product.name}
+          alt={displayName}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/placeholder-product.png';
@@ -142,12 +150,15 @@ export function ProductCard({ product, onCartUpdate, initialWishlisted = false }
 
       {/* Info */}
       <div className="p-3 flex flex-col gap-1.5 flex-1">
-        <p className="text-xs text-orange-500 font-medium truncate">{product.category}</p>
+        <p className="text-xs text-orange-500 font-medium truncate flex items-center gap-1">
+          {product.category_icon && <span className="leading-none">{product.category_icon}</span>}
+          {product.category}
+        </p>
         <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-200 line-clamp-2 leading-snug">
-          {product.name}
+          {displayName}
         </h3>
         <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-          <span className="text-base font-bold text-gray-900 dark:text-slate-100">{formatPrice(product.price)}</span>
+          <span className="text-base font-bold text-gray-900 dark:text-slate-100">{fmt(product.price)}</span>
           {/* Fallback add button for mobile / non-customer */}
           <button
             onClick={handleAddToCart}

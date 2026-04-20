@@ -2,46 +2,52 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   ShoppingCart, Heart, User, Search, Menu, X,
   Package, LayoutDashboard, LogOut, Tag, Wallet,
+  Zap, TrendingUp,
 } from 'lucide-react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 import { authApi } from '@/api/auth';
-import { browseApi } from '@/api/user';
+import { useSearch } from '@/hooks/useSearch';
+import { useCurrencyStore } from '@/store/currencyStore';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useTranslateField } from '@/utils/translate';
+import { CurrencySelector } from '@/components/ui/CurrencySelector';
+import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import toast from 'react-hot-toast';
 import { cn } from '@/utils/cn';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { formatPrice } from '@/utils/image';
+import { formatPrice, getImageUrl } from '@/utils/image';
 import type { Product } from '@/types';
-
-// ── Debounce hook ─────────────────────────────────────────────
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
 
 export function Navbar() {
   const { user, isAuthenticated, clearUser } = useAuthStore();
   const { itemCount } = useCartStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const tf = useTranslateField();
 
-  const [search,       setSearch]       = useState('');
-  const [suggestions,  setSuggestions]  = useState<Product[]>([]);
+  // ── Fetch exchange rates once on mount ────────────────────
+  const fetchRates = useCurrencyStore((s) => s.fetchRates);
+  useEffect(() => { fetchRates(); }, [fetchRates]);
+
+  // ── Fuzzy search via useSearch hook ──────────────────────────
+  const { results: suggestions, loading: loadingSugg, query: search, setQuery: setSearch, clear: clearSearch } = useSearch({ limit: 6, debounceMs: 300 });
+
   const [showDropdown, setShowDropdown] = useState(false);
-  const [loadingSugg,  setLoadingSugg]  = useState(false);
   const [menuOpen,     setMenuOpen]     = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const dropdownRef  = useRef<HTMLDivElement>(null);
-  const searchRef    = useRef<HTMLDivElement>(null);
-  const debouncedQ   = useDebounce(search.trim(), 250);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef   = useRef<HTMLDivElement>(null);
 
-  // ── Close user dropdown on outside click ─────────────────
+  // Show dropdown whenever we have results or are loading
+  useEffect(() => {
+    setShowDropdown(search.trim().length > 0 && (loadingSugg || suggestions.length > 0));
+  }, [search, loadingSugg, suggestions]);
+
+  // ── Close on outside click ────────────────────────────────
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -55,39 +61,18 @@ export function Navbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // ── Live search suggestions ───────────────────────────────
-  const fetchSuggestions = useCallback(async (q: string) => {
-    if (q.length === 0) { setSuggestions([]); setShowDropdown(false); return; }
-    setLoadingSugg(true);
-    try {
-      const res = await browseApi.getProducts({ search: q, limit: 6 });
-      const items = res.data.data || [];
-      setSuggestions(items);
-      setShowDropdown(items.length > 0);
-    } catch {
-      setSuggestions([]);
-      setShowDropdown(false);
-    } finally {
-      setLoadingSugg(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSuggestions(debouncedQ);
-  }, [debouncedQ, fetchSuggestions]);
-
   // ── Submit full search ────────────────────────────────────
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (search.trim()) {
       navigate(`/products?search=${encodeURIComponent(search.trim())}`);
-      setSearch('');
+      clearSearch();
       setShowDropdown(false);
     }
   };
 
   const handleSuggestionClick = (product: Product) => {
-    setSearch('');
+    clearSearch();
     setShowDropdown(false);
     navigate(`/product/${product.uuid}`);
   };
@@ -95,7 +80,7 @@ export function Navbar() {
   const handleLogout = async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
     clearUser();
-    toast.success('Logged out successfully');
+    toast.success(t('nav.logged_out'));
     navigate('/');
   };
 
@@ -109,72 +94,138 @@ export function Navbar() {
     user?.role === 'seller'  ? '/seller/profile' :
                                '/user/profile';
 
-  const avatarLetter = user?.username?.[0]?.toUpperCase() ?? '?';
-
   // ── Search box (shared between desktop + mobile) ──────────
   function SearchBox({ className }: { className?: string }) {
     return (
       <div ref={searchRef} className={cn('relative', className)}>
         <form onSubmit={handleSearch}>
-          <div className="flex w-full rounded-lg overflow-hidden border border-gray-600 focus-within:border-orange-400 transition-colors">
+          <div className="flex w-full rounded-xl overflow-hidden border border-gray-600 focus-within:border-orange-400 transition-colors bg-gray-800">
             <input
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); }}
-              onFocus={() => { if (suggestions.length > 0) setShowDropdown(true); }}
-              placeholder="Search products..."
-              className="flex-1 bg-white text-gray-900 px-4 py-2 text-sm outline-none"
+              onChange={(e) => setSearch(e.target.value)}
+              onFocus={() => { if (search.trim()) setShowDropdown(true); }}
+              placeholder={t('nav.search_placeholder')}
+              className="flex-1 bg-transparent text-gray-100 placeholder-gray-400 px-4 py-2.5 text-sm outline-none"
               autoComplete="off"
             />
-            <button type="submit" className="bg-orange-500 hover:bg-orange-600 px-4 transition-colors shrink-0">
+            {search && (
+              <button
+                type="button"
+                onClick={() => { clearSearch(); setShowDropdown(false); }}
+                className="px-2 text-gray-400 hover:text-gray-200 transition-colors"
+                aria-label={t('nav.search_clear')}
+              >
+                <X size={15} />
+              </button>
+            )}
+            <button
+              type="submit"
+              className="bg-orange-500 hover:bg-orange-600 px-4 transition-colors shrink-0 flex items-center justify-center"
+              aria-label={t('nav.search_button')}
+            >
               {loadingSugg
-                ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
-                : <Search size={18} />
+                ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                : <Search size={17} className="text-white" />
               }
             </button>
           </div>
         </form>
 
-        {/* Suggestions dropdown */}
-        {showDropdown && suggestions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
-            {suggestions.map((p) => (
-              <button
-                key={p.uuid}
-                type="button"
-                onClick={() => handleSuggestionClick(p)}
-                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-orange-50 transition-colors text-left"
-              >
-                {/* Thumbnail */}
-                <div className="w-9 h-9 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                  <img
-                    src={getImageUrl(p.primary_image)}
-                    alt={p.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-product.png'; }}
-                  />
+        {/* ── Suggestions dropdown ── */}
+        {showDropdown && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden z-50">
+
+            {/* Loading skeleton */}
+            {loadingSugg && suggestions.length === 0 && (
+              <div className="px-4 py-3 space-y-2.5">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="flex items-center gap-3 animate-pulse">
+                    <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-slate-700 shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
+                      <div className="h-2.5 bg-gray-100 dark:bg-slate-600 rounded w-1/3" />
+                    </div>
+                    <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-14 shrink-0" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Results */}
+            {!loadingSugg && suggestions.length > 0 && (
+              <>
+                {/* Header */}
+                <div className="flex items-center gap-1.5 px-4 pt-3 pb-1.5">
+                  <Zap size={12} className="text-orange-500" />
+                  <span className="text-[11px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">
+                    {t('nav.instant_results')}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  {/* Highlight matching chars */}
-                  <p className="text-sm font-medium text-gray-800 truncate">
-                    {highlightMatch(p.name, search)}
-                  </p>
-                  <p className="text-xs text-orange-500">{p.category}</p>
-                </div>
-                <p className="text-sm font-bold text-gray-900 shrink-0">
-                  ₹{p.price.toLocaleString('en-IN')}
+
+                {suggestions.map((p) => {
+                  const displayName = tf(p.name);
+                  return (
+                  <button
+                    key={p.uuid}
+                    type="button"
+                    onClick={() => handleSuggestionClick(p)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors text-left group"
+                  >
+                    {/* Thumbnail */}
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-gray-100 dark:bg-slate-700 shrink-0 border border-gray-200 dark:border-slate-600">
+                      <img
+                        src={getImageUrl(p.primary_image)}
+                        alt={displayName}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/logo.png'; }}
+                      />
+                    </div>
+
+                    {/* Name + category */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 dark:text-slate-100 truncate leading-tight">
+                        {highlightMatch(displayName, search)}
+                      </p>
+                      <p className="text-xs text-orange-500 dark:text-orange-400 mt-0.5 truncate">
+                        {p.category}
+                      </p>
+                    </div>
+
+                    {/* Price */}
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-gray-900 dark:text-slate-100">
+                        ₹{p.price.toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  </button>
+                  );
+                })}
+
+                {/* View all */}
+                <button
+                  type="button"
+                  onClick={() => handleSearch()}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 font-semibold border-t border-gray-100 dark:border-slate-700 transition-colors"
+                >
+                  <TrendingUp size={14} />
+                  {t('nav.see_all_results')} "<span className="font-bold">{search}</span>"
+                </button>
+              </>
+            )}
+
+            {/* No results */}
+            {!loadingSugg && suggestions.length === 0 && search.trim() && (
+              <div className="px-4 py-6 text-center">
+                <Package size={28} className="text-gray-300 dark:text-slate-600 mx-auto mb-2" />
+                <p className="text-sm font-medium text-gray-600 dark:text-slate-400">
+                  {t('nav.no_results')} "<span className="text-gray-800 dark:text-slate-200">{search}</span>"
                 </p>
-              </button>
-            ))}
-            {/* View all results */}
-            <button
-              type="button"
-              onClick={handleSearch as unknown as React.MouseEventHandler}
-              className="w-full px-4 py-2.5 text-sm text-orange-500 hover:bg-orange-50 font-medium border-t border-gray-100 flex items-center gap-2 transition-colors"
-            >
-              <Search size={14} />
-              See all results for "<span className="font-semibold">{search}</span>"
-            </button>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                  {t('nav.try_different')}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -185,6 +236,9 @@ export function Navbar() {
     <header className="sticky top-0 z-40 bg-gray-900/95 backdrop-blur-md text-white shadow-lg border-b border-gray-800/50">
       {/* Top bar */}
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
+        {/* Language selector — LEFT */}
+        <LanguageSelector />
+
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 shrink-0">
           <img
@@ -223,6 +277,9 @@ export function Navbar() {
           {/* Theme toggle */}
           <ThemeToggle />
 
+          {/* Currency selector — RIGHT */}
+          <CurrencySelector />
+
           {/* Auth */}
           {isAuthenticated ? (
             <div className="relative" ref={dropdownRef}>
@@ -253,36 +310,36 @@ export function Navbar() {
                         <span className="text-xs font-semibold text-orange-700">
                           {formatPrice(user.wallet_balance ?? 0)}
                         </span>
-                        <span className="text-xs text-orange-500">wallet</span>
+                        <span className="text-xs text-orange-500">{t('nav.wallet')}</span>
                       </div>
                     )}
                   </div>
                   <Link to={dashboardLink} onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
-                    <LayoutDashboard size={15} /> Dashboard
+                    <LayoutDashboard size={15} /> {t('nav.dashboard')}
                   </Link>
                   <Link to={profileLink} onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
-                    <User size={15} /> My Profile
+                    <User size={15} /> {t('nav.my_profile')}
                   </Link>
                   {user?.role === 'customer' && (
                     <Link to="/user/orders" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
-                      <Package size={15} /> My Orders
+                      <Package size={15} /> {t('nav.my_orders')}
                     </Link>
                   )}
                   {user?.role === 'customer' && (
                     <Link to="/user/wallet" onClick={() => setDropdownOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
-                      <Wallet size={15} /> Wallet & Rewards
+                      <Wallet size={15} /> {t('nav.wallet_rewards')}
                     </Link>
                   )}
                   <button onClick={handleLogout} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors">
-                    <LogOut size={15} /> Logout
+                    <LogOut size={15} /> {t('nav.logout')}
                   </button>
                 </div>
               )}
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Link to="/login" className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-700 transition-colors">Login</Link>
-              <Link to="/signup" className="px-3 py-1.5 text-sm bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors font-medium">Sign Up</Link>
+              <Link to="/login" className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-700 transition-colors">{t('nav.login')}</Link>
+              <Link to="/signup" className="px-3 py-1.5 text-sm bg-orange-500 hover:bg-orange-600 rounded-lg transition-colors font-medium">{t('nav.sign_up')}</Link>
             </div>
           )}
 
@@ -301,12 +358,12 @@ export function Navbar() {
       {/* Category nav */}
       <nav className="bg-gray-800 border-t border-gray-700">
         <div className="max-w-7xl mx-auto px-4 flex items-center gap-6 overflow-x-auto py-2 text-sm scrollbar-hide">
-          <Link to="/products" className="whitespace-nowrap hover:text-orange-400 transition-colors">All Products</Link>
+          <Link to="/products" className="whitespace-nowrap hover:text-orange-400 transition-colors">{t('nav.all_products')}</Link>
           <Link to="/products?category=" className="whitespace-nowrap hover:text-orange-400 transition-colors flex items-center gap-1">
-            <Tag size={13} /> Categories
+            <Tag size={13} /> {t('nav.categories')}
           </Link>
           {!isAuthenticated && (
-            <Link to="/signup?role=seller" className="whitespace-nowrap hover:text-orange-400 transition-colors">Sell on ShopHub</Link>
+            <Link to="/signup?role=seller" className="whitespace-nowrap hover:text-orange-400 transition-colors">{t('nav.sell_on')}</Link>
           )}
         </div>
       </nav>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Tag, Send, CheckCircle, Clock } from 'lucide-react';
+import { Tag, Send, CheckCircle, Clock, Search, X } from 'lucide-react';
 import { sellerApi } from '@/api/seller';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -18,6 +18,7 @@ export function SellerCategoriesPage() {
   const [categories, setCategories] = useState<SellerCategory[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [requesting, setRequesting] = useState<string | null>(null);
+  const [search,     setSearch]     = useState('');
 
   const fetchCategories = () => {
     setLoading(true);
@@ -48,6 +49,9 @@ export function SellerCategoriesPage() {
   const approved  = categories.filter((c) => c.status === 'approved');
   const pending   = categories.filter((c) => c.status === 'pending');
   const available = categories.filter((c) => c.status === 'available');
+  const filteredAvailable = search.trim()
+    ? available.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+    : available;
 
   return (
     <div>
@@ -92,11 +96,36 @@ export function SellerCategoriesPage() {
       {/* ── Available to request ── */}
       {available.length > 0 && (
         <>
-          <h2 className="font-semibold text-gray-800 dark:text-slate-200 mb-3 flex items-center gap-2">
-            <Tag size={18} className="text-orange-500" /> Available to Request
-          </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {available.map((cat) => (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+            <h2 className="font-semibold text-gray-800 dark:text-slate-200 flex items-center gap-2">
+              <Tag size={18} className="text-orange-500" /> Available to Request
+              <span className="text-xs font-normal text-gray-400 dark:text-slate-500">({available.length})</span>
+            </h2>
+            {/* Search */}
+            <div className="relative w-full sm:w-56">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search categories…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 border border-gray-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 transition-colors"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {filteredAvailable.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 dark:text-slate-500 text-sm">
+              No categories match "{search}"
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredAvailable.map((cat) => (
               <div
                 key={cat.uuid}
                 className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 flex items-center justify-between hover:border-orange-200 dark:hover:border-orange-500/40 hover:shadow-sm transition-all"
@@ -120,7 +149,8 @@ export function SellerCategoriesPage() {
                 </Button>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </>
       )}
 

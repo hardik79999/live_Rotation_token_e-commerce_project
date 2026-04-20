@@ -147,6 +147,10 @@ class Config:
     # ── Upload limits ─────────────────────────────────────────────────────
     MAX_CONTENT_LENGTH = 15 * 1024 * 1024   # 15 MB hard limit on request body
 
+    # ── Meilisearch ───────────────────────────────────────────────────────
+    MEILISEARCH_URL     = os.getenv('MEILISEARCH_URL',    'http://localhost:7700')
+    MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_API_KEY', '')
+
     # ── Google OAuth ──────────────────────────────────────────────────────
     GOOGLE_CLIENT_ID     = os.getenv('GOOGLE_CLIENT_ID',     '')
     GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')

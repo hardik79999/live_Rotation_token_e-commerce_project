@@ -1,63 +1,87 @@
 /**
  * GoogleAuthSuccess — landing page after Google OAuth callback.
  *
- * The Flask callback sets JWT cookies on the redirect response, so by the
- * time the browser loads this page the cookies are already present.
- * We just call GET /api/auth/profile (which the Axios interceptor handles
- * automatically) to hydrate the Zustand store, then redirect to the dashboard.
+ * WHY THIS EXISTS:
+ *   Flask (:7899) sets JWT cookies on the 302 redirect response, but the
+ *   browser drops them because the redirect destination is React (:5173) —
+ *   a different port = different origin = SameSite=Lax blocks the cookies.
  *
- * If the URL contains ?oauth_error=... we show an error toast and redirect
- * to /login instead.
+ * THE FIX — one-time-token (OTT) bridge:
+ *   1. Flask redirects here with ?ott=<short-lived-token> (no cookies).
+ *   2. This page POSTs the OTT to GET /api/auth/google/exchange via Axios
+ *      (same-origin call thanks to Vite proxy → :7899).
+ *   3. Flask validates the OTT, sets JWT cookies on THAT response, and
+ *      returns the user profile JSON.
+ *   4. We save the user to Zustand and navigate to the dashboard.
+ *
+ * ERROR PATH:
+ *   If the URL contains ?oauth_error=... we show a toast and go to /login.
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { authApi } from '@/api/auth';
+import api from '@/api/axios';
+import { AUTH } from '@/api/routes';
 import { useAuthStore } from '@/store/authStore';
+import type { User } from '@/types';
 import toast from 'react-hot-toast';
 
+const ERROR_MESSAGES: Record<string, string> = {
+  invalid_state:             'Security check failed. Please try again.',
+  token_exchange_failed:     'Could not connect to Google. Please try again.',
+  token_verification_failed: 'Google sign-in verification failed.',
+  email_not_verified:        'Your Google account email is not verified.',
+  account_suspended:         'Your account has been suspended. Contact support.',
+  server_error:              'A server error occurred. Please try again.',
+  access_denied:             'Google sign-in was cancelled.',
+};
+
 export function GoogleAuthSuccess() {
-  const navigate      = useNavigate();
+  const navigate       = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setUser }   = useAuthStore();
+  const { setUser }    = useAuthStore();
+  const called         = useRef(false);   // prevent double-fire in React StrictMode
 
   useEffect(() => {
-    const oauthError = searchParams.get('oauth_error');
+    if (called.current) return;
+    called.current = true;
 
+    // ── Error path ────────────────────────────────────────────
+    const oauthError = searchParams.get('oauth_error');
     if (oauthError) {
-      const messages: Record<string, string> = {
-        invalid_state:             'Security check failed. Please try again.',
-        token_exchange_failed:     'Could not connect to Google. Please try again.',
-        token_verification_failed: 'Google sign-in verification failed.',
-        email_not_verified:        'Your Google account email is not verified.',
-        account_suspended:         'Your account has been suspended. Contact support.',
-        server_error:              'A server error occurred. Please try again.',
-        access_denied:             'Google sign-in was cancelled.',
-      };
-      toast.error(messages[oauthError] ?? 'Google sign-in failed. Please try again.');
+      toast.error(ERROR_MESSAGES[oauthError] ?? 'Google sign-in failed. Please try again.');
       navigate('/login', { replace: true });
       return;
     }
 
-    // Cookies are already set — just fetch the profile to hydrate the store
-    authApi.profile()
+    // ── OTT exchange path ─────────────────────────────────────
+    const ott = searchParams.get('ott');
+    if (!ott) {
+      toast.error('Missing sign-in token. Please try again.');
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    api
+      .get<{ success: boolean; data: User }>(AUTH.GOOGLE_EXCHANGE, { params: { ott } })
       .then((res) => {
         const user = res.data.data;
-        if (user) {
-          setUser(user);
-          toast.success(`Welcome, ${user.username}! 🎉`);
-          if (user.role === 'admin') {
-            navigate('/admin/dashboard', { replace: true });
-          } else if (user.role === 'seller') {
-            navigate('/seller/dashboard', { replace: true });
-          } else {
-            navigate('/user/dashboard', { replace: true });
-          }
+        if (!user) throw new Error('No user data in response');
+
+        setUser(user);
+        toast.success(`Welcome, ${user.username}! 🎉`);
+
+        if (user.role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
+        } else if (user.role === 'seller') {
+          navigate('/seller/dashboard', { replace: true });
         } else {
-          throw new Error('No user data');
+          navigate('/user/dashboard', { replace: true });
         }
       })
-      .catch(() => {
-        toast.error('Sign-in failed. Please try again.');
+      .catch((err) => {
+        const msg =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        toast.error(msg || 'Sign-in failed. Please try again.');
         navigate('/login', { replace: true });
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

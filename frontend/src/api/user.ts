@@ -1,5 +1,5 @@
 import api from './axios';
-import { BROWSE, CART, WISHLIST, ADDRESS, ORDER, REVIEW, WALLET } from './routes';
+import { BROWSE, CART, WISHLIST, ADDRESS, ORDER, REVIEW, WALLET, SEARCH } from './routes';
 import type {
   ApiResponse,
   PaginatedResponse,
@@ -38,6 +38,20 @@ export const browseApi = {
     api.get<{ success: boolean; source: string; data: Product[] }>(
       BROWSE.RECOMMENDATIONS(uuid),
     ),
+};
+
+// ── Fuzzy search (Meilisearch → SQL fallback) ─────────────────
+export const searchApi = {
+  search: (params: {
+    q: string;
+    limit?: number;
+    page?: number;
+    category_uuid?: string;
+    min_price?: number;
+    max_price?: number;
+    in_stock?: boolean;
+    sort_by?: string;
+  }) => api.get<PaginatedResponse<Product>>(SEARCH.PRODUCTS, { params }),
 };
 
 // ── Cart ─────────────────────────────────────────────────────

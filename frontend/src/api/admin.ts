@@ -14,10 +14,10 @@ export const adminApi = {
   listCategories: () =>
     api.get<ApiResponse<Category[]>>(ADMIN.CATEGORIES),
 
-  createCategory: (data: { name: string; description?: string }) =>
+  createCategory: (data: { name: string; description?: string; icon?: string }) =>
     api.post<ApiResponse<Category>>(ADMIN.CREATE_CATEGORY, data),
 
-  updateCategory: (uuid: string, data: { name?: string; description?: string }) =>
+  updateCategory: (uuid: string, data: { name?: string; description?: string; icon?: string }) =>
     api.put<ApiResponse<Category>>(ADMIN.UPDATE_CATEGORY(uuid), data),
 
   deleteCategory: (uuid: string) =>

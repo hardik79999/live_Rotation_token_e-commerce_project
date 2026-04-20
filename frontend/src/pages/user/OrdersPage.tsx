@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Package, Clock, FileText, ChevronDown, ChevronUp,
-  Download, Printer, CheckCircle, Truck, XCircle, Star, RotateCcw,
+  Download, Printer, CheckCircle, Truck, XCircle, Star, RotateCcw, Search, X,
 } from 'lucide-react';
 import { orderApi, reviewApi } from '@/api/user';
 import type { Order, OrderDetail, Invoice } from '@/types';
@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { ReturnOrderModal } from '@/components/order/ReturnOrderModal';
+import { MagicDropzone } from '@/components/ui/MagicDropzone';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 
@@ -115,35 +116,29 @@ function WriteReviewModal({
 }) {
   const [rating,     setRating]     = useState(5);
   const [comment,    setComment]    = useState('');
-  const [image,      setImage]      = useState<File | null>(null);
-  const [preview,    setPreview]    = useState<string | null>(null);
+  const [images,     setImages]     = useState<File[]>([]);
+  const [previews,   setPreviews]   = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setImage(file);
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreview(url);
-    } else {
-      setPreview(null);
-    }
+  const handleFiles = (files: File[]) => {
+    const newPreviews = files.map(f => URL.createObjectURL(f));
+    setImages(prev => [...prev, ...files]);
+    setPreviews(prev => [...prev, ...newPreviews]);
   };
 
-  // Clean up object URL on unmount
-  const clearImage = () => {
-    if (preview) URL.revokeObjectURL(preview);
-    setImage(null);
-    setPreview(null);
+  const removeImage = (idx: number) => {
+    URL.revokeObjectURL(previews[idx]);
+    setImages(prev => prev.filter((_, i) => i !== idx));
+    setPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await reviewApi.addReview(productUuid, { rating, comment, image });
+      await reviewApi.addReview(productUuid, { rating, comment, images });
       toast.success('Review submitted! Thank you.');
-      if (preview) URL.revokeObjectURL(preview);
+      previews.forEach(URL.revokeObjectURL);
       onClose();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -198,42 +193,20 @@ function WriteReviewModal({
           />
         </div>
 
-        {/* Photo upload */}
+        {/* Photo upload — MagicDropzone */}
         <div>
           <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 block">
-            Add a Photo <span className="text-gray-400 font-normal">(optional)</span>
+            Add Photos <span className="text-gray-400 font-normal">(optional)</span>
           </label>
-
-          {preview ? (
-            /* Thumbnail preview with remove button */
-            <div className="relative inline-block">
-              <img
-                src={preview}
-                alt="Review preview"
-                className="w-24 h-24 object-cover rounded-xl border-2 border-orange-400 shadow-sm"
-              />
-              <button
-                type="button"
-                onClick={clearImage}
-                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors shadow"
-                aria-label="Remove photo"
-              >
-                ×
-              </button>
-            </div>
-          ) : (
-            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl cursor-pointer hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/5 transition-colors">
-              <span className="text-2xl mb-1">📷</span>
-              <span className="text-xs text-gray-500 dark:text-slate-400">Click to upload photo</span>
-              <span className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">JPG, PNG, WebP · max 10 MB</span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageChange}
-              />
-            </label>
-          )}
+          <MagicDropzone
+            onFiles={handleFiles}
+            previews={previews}
+            onRemove={removeImage}
+            maxFiles={3}
+            label="Drag & drop your photo or click to browse"
+            sublabel="JPG, PNG, WebP · max 10 MB · or paste with Ctrl+V"
+            thumbSize="w-20 h-20"
+          />
         </div>
 
         <div className="flex gap-3">
@@ -255,6 +228,7 @@ export function OrdersPage() {
   const [trackingUuid, setTrackingUuid] = useState<string | null>(null);
   const [invoiceOrderUuid, setInvoiceOrderUuid] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery,  setSearchQuery]  = useState('');
   const [reviewTarget, setReviewTarget] = useState<{ uuid: string; name: string } | null>(null);
   const [returnTarget, setReturnTarget] = useState<{ uuid: string; amount: number; daysLeft: number } | null>(null);
 
@@ -280,38 +254,70 @@ export function OrdersPage() {
     }
   };
 
-  const filtered = statusFilter === 'all'
-    ? orders
-    : orders.filter((o) => o.status === statusFilter);
+  const filtered = (() => {
+    let result = statusFilter === 'all' ? orders : orders.filter((o) => o.status === statusFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (o) =>
+          o.uuid.toLowerCase().includes(q) ||
+          o.items.some((i) => i.product_name.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  })();
 
   if (loading) return <PageSpinner />;
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">My Orders</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{orders.length} total orders</p>
         </div>
       </div>
 
-      {/* Status filter tabs */}
+      {/* Search + filter row */}
       {orders.length > 0 && (
-        <div className="flex gap-2 flex-wrap mb-5">
-          {['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all capitalize ${
-                statusFilter === s
-                  ? 'bg-orange-500 text-white border-orange-500'
-                  : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-400 hover:border-orange-400 bg-white dark:bg-slate-800'
-              }`}
-            >
-              {s === 'all' ? `All (${orders.length})` : `${s} (${orders.filter((o) => o.status === s).length})`}
-            </button>
-          ))}
+        <div className="flex flex-col sm:flex-row gap-3 mb-5">
+          {/* Search bar */}
+          <div className="relative flex-1 max-w-sm">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by product or order ID…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 border border-gray-300 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* Status filter tabs */}
+          <div className="flex gap-2 flex-wrap">
+            {['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all capitalize ${
+                  statusFilter === s
+                    ? 'bg-orange-500 text-white border-orange-500'
+                    : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-400 hover:border-orange-400 bg-white dark:bg-slate-800'
+                }`}
+              >
+                {s === 'all' ? `All (${orders.length})` : `${s} (${orders.filter((o) => o.status === s).length})`}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

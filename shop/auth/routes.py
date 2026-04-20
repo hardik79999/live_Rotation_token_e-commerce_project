@@ -11,7 +11,7 @@ from shop.auth.api.refresh        import refresh_action
 from shop.auth.api.forgot_password import forgot_password_action
 from shop.auth.api.reset_password  import reset_password_action
 from shop.auth.api.verify_email    import verify_email_action
-from shop.auth.api.google_oauth    import google_login_action, google_callback_action
+from shop.auth.api.google_oauth    import google_login_action, google_callback_action, google_exchange_action
 
 
 @auth_bp.route('/signup', methods=['POST'])
@@ -265,6 +265,25 @@ def google_callback_route():
       - 🔐 Authentication
     responses:
       302:
-        description: Redirects to frontend with JWT cookies set
+        description: Redirects to React with one-time token in URL
     """
     return google_callback_action()
+
+
+@auth_bp.route('/google/exchange', methods=['GET'])
+def google_exchange_route():
+    """
+    Exchange Google OTT for JWT cookies
+    ---
+    tags:
+      - 🔐 Authentication
+    parameters:
+      - name: ott
+        in: query
+        type: string
+        required: true
+    responses:
+      200:
+        description: JWT cookies set, user profile returned
+    """
+    return google_exchange_action()

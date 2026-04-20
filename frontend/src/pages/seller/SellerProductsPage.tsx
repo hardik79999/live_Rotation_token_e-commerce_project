@@ -13,6 +13,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { QuickEditProductModal } from '@/components/seller/QuickEditProductModal';
+import { AddProductModal } from '@/components/seller/AddProductModal';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 
@@ -153,13 +154,12 @@ export function SellerProductsPage() {
   const [allCategories,      setAllCategories]      = useState<SellerCategoryItem[]>([]);
   const [loading,            setLoading]            = useState(true);
   const [showModal,          setShowModal]          = useState(false);
+  const [showAddModal,       setShowAddModal]       = useState(false);
   const [editingUuid,        setEditingUuid]        = useState<string | null>(null);
   const [form,               setForm]               = useState<ProductForm>(emptyForm);
   const [saving,             setSaving]             = useState(false);
   const [deleteTarget,       setDeleteTarget]       = useState<Product | null>(null);
   const [deleting,           setDeleting]           = useState(false);
-
-  // ── New state ──────────────────────────────────────────────────────────────
   const [quickEditProduct,   setQuickEditProduct]   = useState<Product | null>(null);
 
   const fetchAll = useCallback(async () => {
@@ -179,7 +179,7 @@ export function SellerProductsPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const openCreate = () => { setEditingUuid(null); setForm(emptyForm); setShowModal(true); };
+  const openCreate = () => setShowAddModal(true);
 
   const openEdit = (p: Product, e: React.MouseEvent) => {
     e.stopPropagation(); // don't also open quick-edit
@@ -389,11 +389,19 @@ export function SellerProductsPage() {
         onSaved={fetchAll}
       />
 
-      {/* ── Full Create / Edit Modal ── */}
+      {/* ── Add Product Modal (variant-aware) ── */}
+      <AddProductModal
+        isOpen={showAddModal}
+        approvedCategories={approvedCategories}
+        onClose={() => setShowAddModal(false)}
+        onSaved={fetchAll}
+      />
+
+      {/* ── Full Edit Modal (existing flat form — for editing) ── */}
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editingUuid ? 'Edit Product' : 'Add New Product'}
+        title="Edit Product"
         size="xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
