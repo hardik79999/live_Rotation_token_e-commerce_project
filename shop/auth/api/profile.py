@@ -34,10 +34,11 @@ def profile_action():
         )
 
     except Exception as e:
-        error_msg = str(e)
-        if "Signature has expired" in error_msg or "Token has expired" in error_msg:
-            return error_response("Session expired. Please login again.", 401)
-        return error_response(error_msg, 500)
+        from flask import current_app
+        current_app.logger.error(f'profile_action error: {e}', exc_info=True)
+        if 'Signature has expired' in str(e) or 'Token has expired' in str(e):
+            return error_response('Session expired. Please login again.', 401)
+        return error_response('An error occurred. Please try again.', 500)
 
 
 def update_profile_action():
@@ -76,4 +77,4 @@ def update_profile_action():
 
     except Exception as e:
         db.session.rollback()
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)

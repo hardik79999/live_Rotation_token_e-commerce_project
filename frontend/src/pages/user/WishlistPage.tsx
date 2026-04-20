@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { Heart, Search, X } from 'lucide-react';
 import { wishlistApi } from '@/api/user';
 import type { Product } from '@/types';
 import { ProductCard } from '@/components/product/ProductCard';
-import { PageSpinner } from '@/components/ui/Spinner';
 import toast from 'react-hot-toast';
 
 export function WishlistPage() {

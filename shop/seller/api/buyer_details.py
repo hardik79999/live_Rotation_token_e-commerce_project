@@ -159,7 +159,5 @@ def get_buyer_details_action(order_uuid: str):
         }), 200
 
     except Exception as e:
-        traceback.print_exc()
-        from flask import current_app
-        current_app.logger.error(f"buyer_details error: {e}")
-        return error_response(f"Failed to fetch buyer details: {str(e)}", 500)
+        current_app.logger.error(f'get_buyer_details error: {e}', exc_info=True)
+        return error_response('Failed to fetch buyer details. Please try again.', 500)

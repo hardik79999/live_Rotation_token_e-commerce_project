@@ -129,4 +129,4 @@ def get_seller_orders_action():
         return jsonify({"success": True, "total": len(result), "data": result}), 200
 
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)

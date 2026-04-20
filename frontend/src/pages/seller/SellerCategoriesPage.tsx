@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { Tag, Send, CheckCircle, Clock, Search, X } from 'lucide-react';
 import { sellerApi } from '@/api/seller';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { PageSpinner } from '@/components/ui/Spinner';
 import toast from 'react-hot-toast';
 
 interface SellerCategory {

@@ -77,5 +77,6 @@ def create_category_action():
 
     except Exception as e:
         db.session.rollback()
-        print("CREATE CATEGORY ERROR:", e)
-        return error_response(str(e), 500)
+        from flask import current_app
+        current_app.logger.error(f'create_category error: {e}', exc_info=True)
+        return error_response('Failed to create category. Please try again.', 500)

@@ -3,7 +3,7 @@ import { ADMIN } from './routes';
 import type {
   ApiResponse, AdminDashboard, CategoryRequest, Category,
   SellerOverviewItem, SellerDetail, RevenueChartPoint, AnalyticsPoint, AnalyticsRange,
-  ProductDirectoryResponse, RevenueTrendPoint, TopSellerItem, AdminReturnItem,
+  ProductDirectoryResponse, RevenueTrendPoint, TopSellerItem,
 } from '@/types';
 
 export const adminApi = {
@@ -67,19 +67,4 @@ export const adminApi = {
 
   getTopSellers: () =>
     api.get<ApiResponse<TopSellerItem[]>>(ADMIN.TOP_SELLERS),
-
-  // ── Returns ───────────────────────────────────────────────
-  getReturns: (params?: { status?: string; page?: number; per_page?: number }) =>
-    api.get<{
-      success: boolean;
-      data: AdminReturnItem[];
-      total: number;
-      page: number;
-      pages: number;
-    }>(ADMIN.RETURNS, { params }),
-
-  processReturn: (
-    return_uuid: string,
-    data: { action: 'approve' | 'reject'; admin_notes?: string },
-  ) => api.post<ApiResponse>(ADMIN.PROCESS_RETURN(return_uuid), data),
 };

@@ -173,13 +173,8 @@ def seller_approve_return_action(order_uuid: str):
 
     except Exception as e:
         db.session.rollback()
-        traceback.print_exc()
-        return error_response(str(e), 500)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PUT /api/seller/order/<order_uuid>/return/reject
-# ─────────────────────────────────────────────────────────────────────────────
+        current_app.logger.error(f'seller_approve_return error: {e}', exc_info=True)
+        return error_response('Failed to process return. Please try again.', 500)
 def seller_reject_return_action(order_uuid: str):
     try:
         seller, order, ret, err = _get_seller_and_return(order_uuid)
@@ -204,5 +199,5 @@ def seller_reject_return_action(order_uuid: str):
 
     except Exception as e:
         db.session.rollback()
-        traceback.print_exc()
-        return error_response(str(e), 500)
+        current_app.logger.error(f'seller_reject_return error: {e}', exc_info=True)
+        return error_response('Failed to process return. Please try again.', 500)

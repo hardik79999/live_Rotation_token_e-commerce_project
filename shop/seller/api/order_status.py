@@ -1,22 +1,7 @@
 """
 PUT /api/seller/order/<order_uuid>/status
-
-Updates the status of an order, with strict validation:
-
-Security & business rules
-─────────────────────────
-1. JWT required — role must be "admin" or "seller".
-2. Ownership check (sellers only): the order must contain at least one
-   product belonging to this seller. Admins bypass this check.
-3. Terminal-state guard: orders that are already "delivered" or "cancelled"
-   cannot be updated further.
-4. Inventory restoration: when an order is cancelled, every OrderItem whose
-   product belongs to this seller has its quantity returned to Product.stock.
-   This is done atomically inside the same DB transaction.
-5. Tracking history entry is always written.
-6. Customer email notification is sent after a successful commit.
 """
-import traceback
+import logging
 from flask import request, jsonify, current_app
 from flask_jwt_extended import verify_jwt_in_request, get_jwt
 from shop.extensions import db
@@ -255,6 +240,5 @@ def update_order_status_action(order_uuid: str):
 
     except Exception as e:
         db.session.rollback()
-        traceback.print_exc()
-        current_app.logger.error(f"Order status update error: {e}")
-        return error_response(f"Failed to update order status: {str(e)}", 500)
+        current_app.logger.error(f'update_order_status error: {e}', exc_info=True)
+        return error_response('Failed to update order status. Please try again.', 500)

@@ -12,7 +12,6 @@ import { Badge, orderStatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 
@@ -44,6 +43,31 @@ interface DashboardData {
     total_sold: number;
     total_revenue: number;
   }[];
+}
+
+// ── Skeleton ──────────────────────────────────────────────────
+function Sk({ className }: { className?: string }) {
+  return <div className={cn('animate-pulse rounded-xl bg-gray-100 dark:bg-slate-700', className)} />;
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2"><Sk className="h-7 w-48" /><Sk className="h-4 w-64" /></div>
+        <div className="flex gap-2"><Sk className="h-9 w-24" /><Sk className="h-9 w-32" /></div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <Sk key={i} className="h-28" />)}
+      </div>
+      <div className="grid lg:grid-cols-3 gap-4">
+        <Sk className="lg:col-span-2 h-52" /><Sk className="h-52" />
+      </div>
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Sk className="h-64" /><Sk className="h-64" />
+      </div>
+    </div>
+  );
 }
 
 // ── Stat card ─────────────────────────────────────────────────
@@ -210,7 +234,7 @@ export function AdminDashboardPage() {
     }
   };
 
-  if (loading) return <PageSpinner />;
+  if (loading) return <DashboardSkeleton />;
 
   const breakdown = data?.order_status_breakdown ?? {};
   const delivered = breakdown['delivered'] ?? 0;

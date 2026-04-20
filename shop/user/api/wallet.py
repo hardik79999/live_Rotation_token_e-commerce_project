@@ -33,7 +33,7 @@ def get_wallet_action():
         }), 200
 
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 def get_wallet_transactions_action():
@@ -66,7 +66,7 @@ def get_wallet_transactions_action():
         }), 200
 
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 def _serialize(t: WalletTransaction) -> dict:

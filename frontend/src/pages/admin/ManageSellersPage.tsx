@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { Users, ShieldOff, ShieldCheck } from 'lucide-react';
 import { adminApi } from '@/api/admin';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { Input } from '@/components/ui/Input';
 import toast from 'react-hot-toast';
 

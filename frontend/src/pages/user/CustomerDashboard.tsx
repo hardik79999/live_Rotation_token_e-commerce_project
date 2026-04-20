@@ -3,6 +3,7 @@
  * Shows: recent orders summary, quick stats, featured products, wishlist preview.
  */
 import { useEffect, useState } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ShoppingBag, Heart, MapPin, Package,
@@ -13,7 +14,6 @@ import type { Order, Product } from '@/types';
 import { formatPrice, formatDate } from '@/utils/image';
 import { Badge, orderStatusBadge } from '@/components/ui/Badge';
 import { ProductCard } from '@/components/product/ProductCard';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 

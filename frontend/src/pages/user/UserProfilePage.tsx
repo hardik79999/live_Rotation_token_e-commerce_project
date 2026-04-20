@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import {
   User, Mail, Phone, Shield, Camera, Pencil,
   Save, X, Trash2, AlertTriangle, CheckCircle, Lock,
@@ -11,7 +12,6 @@ import { Badge, orderStatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { PageSpinner } from '@/components/ui/Spinner';
 import type { Order } from '@/types';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';

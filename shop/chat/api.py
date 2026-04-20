@@ -86,7 +86,7 @@ def get_or_create_room():
         }), 200
 
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 # ── GET /api/chat/history/<room_id> ──────────────────────────
@@ -126,7 +126,7 @@ def get_history(room_id: str):
         }), 200
 
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 # ── GET /api/chat/conversations ───────────────────────────────
@@ -215,4 +215,4 @@ def get_conversations():
         }), 200
 
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)

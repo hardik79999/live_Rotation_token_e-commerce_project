@@ -187,11 +187,6 @@ def seller_analytics_action():
         )
 
     except Exception as e:
-        # Print full traceback to the terminal so it's visible immediately
-        traceback.print_exc()
         from flask import current_app
-        current_app.logger.error(f"seller_analytics error: {e}")
-        return error_response(
-            f"Analytics query failed: {str(e)}",
-            500,
-        )
+        current_app.logger.error(f'seller_analytics error: {e}', exc_info=True)
+        return error_response('Analytics query failed. Please try again.', 500)

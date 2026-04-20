@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { MapPin, Plus, Star, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import { addressApi } from '@/api/user';
 import type { Address } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 

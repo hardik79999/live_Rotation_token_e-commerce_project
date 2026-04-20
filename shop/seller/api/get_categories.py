@@ -35,4 +35,4 @@ def get_categories_action():
             total_categories=len(result),
         )
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)

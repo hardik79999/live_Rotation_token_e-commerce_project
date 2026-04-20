@@ -32,7 +32,7 @@ def generate_invoice_action(order_uuid):
             )
             db.session.add(db_invoice)
             db.session.commit()
-            print(f"✅ Invoice {inv_number} saved in Database!")
+            current_app.logger.info(f'Invoice {inv_number} created for order {order_uuid}')
         else:
             inv_number = db_invoice.invoice_number
 
@@ -78,5 +78,5 @@ def generate_invoice_action(order_uuid):
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Invoice Generation Error: {str(e)}")
-        return error_response(f"Failed to process invoice: {str(e)}", 500)
+        current_app.logger.error(f'Invoice generation error: {e}', exc_info=True)
+        return error_response('Failed to process invoice. Please try again.', 500)

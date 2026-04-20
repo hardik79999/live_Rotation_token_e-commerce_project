@@ -172,9 +172,4 @@ export const ADMIN = {
   PRODUCTS_DIRECTORY:  '/api/admin/products/directory',
   REVENUE_TREND:       '/api/admin/analytics/revenue-trend',
   TOP_SELLERS:         '/api/admin/analytics/top-sellers',
-
-  // ── Returns ───────────────────────────────────────────────
-  RETURNS:             '/api/admin/returns',
-  PROCESS_RETURN: (return_uuid: string) =>
-    `/api/admin/return/${return_uuid}/action` as const,
 } as const;

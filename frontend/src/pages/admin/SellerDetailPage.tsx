@@ -11,7 +11,6 @@ import type { SellerDetail, RevenueChartPoint } from '@/types';
 import { formatPrice, formatDate, getImageUrl } from '@/utils/image';
 import { Badge, orderStatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { RevenueChartSkeleton } from '@/components/ui/Skeleton';
 import { SellerRevenueChart } from '@/components/admin/SellerRevenueChart';
 import { AdminProductQuickViewModal } from '@/components/admin/AdminProductQuickViewModal';
@@ -19,6 +18,30 @@ import { ExpandedAnalyticsModal } from '@/components/admin/ExpandedAnalyticsModa
 import { SellerKYCModal } from '@/components/admin/SellerKYCModal';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+function Sk({ className }: { className?: string }) {
+  return <div className={cn('animate-pulse rounded-xl bg-gray-100 dark:bg-slate-700/60', className)} />;
+}
+
+function PageSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Sk className="h-8 w-8" />
+        <Sk className="h-6 w-48" />
+      </div>
+      <Sk className="h-40 w-full" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <Sk key={i} className="h-24" />)}
+      </div>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Sk className="h-64" /><Sk className="h-64" />
+      </div>
+      <Sk className="h-48 w-full" />
+    </div>
+  );
+}
 
 // ── Status icon ───────────────────────────────────────────────────────────────
 const STATUS_ICON: Record<string, React.ReactNode> = {
@@ -106,7 +129,7 @@ export function SellerDetailPage() {
     }
   };
 
-  if (loading) return <PageSpinner />;
+  if (loading) return <PageSkeleton />;
   if (!detail) {
     return (
       <div className="text-center py-20">

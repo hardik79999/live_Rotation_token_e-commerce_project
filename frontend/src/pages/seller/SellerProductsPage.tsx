@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import {
   Plus, Pencil, Trash2, Package, AlertTriangle,
   AlertCircle, CheckCircle, Bell,
@@ -11,7 +12,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { QuickEditProductModal } from '@/components/seller/QuickEditProductModal';
 import { AddProductModal } from '@/components/seller/AddProductModal';
 import { cn } from '@/utils/cn';

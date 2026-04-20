@@ -69,5 +69,5 @@ def upload_profile_photo_action():
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Profile photo upload error: {e}")
-        return error_response(str(e), 500)
+        current_app.logger.error(f'profile_photo upload error: {e}', exc_info=True)
+        return error_response('Failed to upload photo. Please try again.', 500)

@@ -52,7 +52,7 @@ def add_address_action():
         }), 201
     except Exception as e:
         db.session.rollback()
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 def get_addresses_action():
@@ -80,7 +80,7 @@ def get_addresses_action():
 
         return jsonify({"success": True, "data": result}), 200
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 def set_default_address_action(address_uuid: str):
@@ -107,7 +107,7 @@ def set_default_address_action(address_uuid: str):
         )
     except Exception as e:
         db.session.rollback()
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 def delete_address_action(address_uuid: str):
@@ -126,4 +126,4 @@ def delete_address_action(address_uuid: str):
         return success_response(message="Address deleted", status_code=200)
     except Exception as e:
         db.session.rollback()
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)

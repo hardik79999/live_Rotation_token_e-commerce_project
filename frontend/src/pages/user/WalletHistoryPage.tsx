@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { Wallet, ArrowDownCircle, ArrowUpCircle, RefreshCw } from 'lucide-react';
 import { walletApi } from '@/api/user';
 import type { WalletTransaction } from '@/types';
 import { Button } from '@/components/ui/Button';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { formatPrice } from '@/utils/image';
 import { cn } from '@/utils/cn';
 

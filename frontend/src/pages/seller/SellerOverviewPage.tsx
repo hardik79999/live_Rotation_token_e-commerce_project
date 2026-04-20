@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Package, ShoppingBag, TrendingUp, Tag,
@@ -32,7 +33,6 @@ import type { SellerCategoryItem } from '@/api/seller';
 import { formatPrice, formatDate, getImageUrl } from '@/utils/image';
 import { Badge, orderStatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { RevenueChartSkeleton } from '@/components/ui/Skeleton';
 import { SellerRevenueChart } from '@/components/admin/SellerRevenueChart';
 import { ExpandedSellerAnalyticsModal } from '@/components/seller/ExpandedSellerAnalyticsModal';

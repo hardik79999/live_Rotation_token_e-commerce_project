@@ -49,7 +49,6 @@ import { AdminCategoriesPage } from '@/pages/admin/AdminCategoriesPage';
 import { SellerSurveillancePage } from '@/pages/admin/SellerSurveillancePage';
 import { SellerDetailPage } from '@/pages/admin/SellerDetailPage';
 import { ProductDirectoryPage } from '@/pages/admin/ProductDirectoryPage';
-import { AdminReturnsPage } from '@/pages/admin/AdminReturnsPage';
 
 export default function App() {
   const { setUser, clearUser } = useAuthStore();
@@ -245,7 +244,6 @@ export default function App() {
           <Route path="/admin/sellers" element={<SellerSurveillancePage />} />
           <Route path="/admin/sellers/:uuid" element={<SellerDetailPage />} />
           <Route path="/admin/products" element={<ProductDirectoryPage />} />
-          <Route path="/admin/returns" element={<AdminReturnsPage />} />
           <Route path="/admin/profile" element={<ProfilePage />} />
         </Route>
 

@@ -25,5 +25,5 @@ def profile_delete_action():
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Profile Delete Error: {str(e)}")
-        return error_response(f"An error occurred: {str(e)}", 500)
+        current_app.logger.error(f'profile_delete error: {e}', exc_info=True)
+        return error_response('Failed to delete account. Please try again.', 500)

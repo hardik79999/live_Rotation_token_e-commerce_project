@@ -118,8 +118,8 @@ def request_return_action(order_uuid: str):
 
     except Exception as e:
         db.session.rollback()
-        traceback.print_exc()
-        return error_response(str(e), 500)
+        from flask import current_app; current_app.logger.error(f'return_order error: {e}', exc_info=True)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ def get_return_status_action(order_uuid: str):
         }), 200
 
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -306,8 +306,8 @@ def process_return_action(return_uuid: str):
 
     except Exception as e:
         db.session.rollback()
-        traceback.print_exc()
-        return error_response(str(e), 500)
+        from flask import current_app; current_app.logger.error(f'return_order error: {e}', exc_info=True)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 def _serialize_return(ret: OrderReturn) -> dict:

@@ -3,6 +3,7 @@
  * Coupons created here appear in the customer cart page coupon list.
  */
 import { useEffect, useState } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import {
   Plus, Ticket, Trash2, ToggleLeft, ToggleRight,
   Clock, Users, RefreshCw, Copy, CheckCircle,
@@ -13,7 +14,6 @@ import { formatPrice } from '@/utils/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';

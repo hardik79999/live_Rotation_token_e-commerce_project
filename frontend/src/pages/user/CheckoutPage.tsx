@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Plus, CreditCard, Truck, Smartphone, Tag, Wallet } from 'lucide-react';
 import { addressApi, orderApi, cartApi, walletApi } from '@/api/user';
@@ -6,7 +7,6 @@ import type { Address, PaymentMethod, PromoValidateResponse } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { PromoCodeInput } from '@/components/cart/PromoCodeInput';
 import { useCartStore } from '@/store/cartStore';
 import { useCurrency } from '@/hooks/useCurrency';

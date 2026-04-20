@@ -9,7 +9,6 @@ import type { AdminProduct, Category } from '@/types';
 import { formatPrice, getImageUrl } from '@/utils/image';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { AdminProductQuickViewModal } from '@/components/admin/AdminProductQuickViewModal';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';

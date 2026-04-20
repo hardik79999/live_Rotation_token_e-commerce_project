@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ShoppingCart, Heart, Star, ChevronLeft, ChevronRight,
@@ -12,7 +13,6 @@ import { useTranslateField } from '@/utils/translate';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { StarRating } from '@/components/ui/StarRating';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { ProductCard } from '@/components/product/ProductCard';
 import { LiveChatModal } from '@/components/chat/LiveChatModal';
 import { useAuthStore } from '@/store/authStore';

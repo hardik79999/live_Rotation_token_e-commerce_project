@@ -40,7 +40,7 @@ def toggle_wishlist_action():
         }), 200
     except Exception as e:
         db.session.rollback()
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 def get_wishlist_action():
     try:
@@ -63,4 +63,4 @@ def get_wishlist_action():
             "data": result
         }), 200
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)

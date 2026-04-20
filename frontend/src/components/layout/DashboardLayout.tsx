@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Tag, ShoppingBag, Heart,
   MapPin, LogOut, Menu, X, ChevronRight, Users,
-  CheckSquare, ClipboardList, Home, User, Globe, MessageCircle, Ticket, RotateCcw,
+  CheckSquare, ClipboardList, Home, User, Globe, MessageCircle, Ticket,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
@@ -42,7 +42,6 @@ const navItems: NavItem[] = [
   { to: '/admin/products',           label: 'Product Directory', icon: <Globe size={17} />,           roles: ['admin'] },
   { to: '/admin/categories',         label: 'Categories',        icon: <Tag size={17} />,             roles: ['admin'] },
   { to: '/admin/category-requests',  label: 'Category Requests', icon: <CheckSquare size={17} />,     roles: ['admin'] },
-  { to: '/admin/returns',            label: 'Return Requests',   icon: <RotateCcw size={17} />,       roles: ['admin'] },
   { to: '/admin/profile',            label: 'My Profile',        icon: <User size={17} />,            roles: ['admin'] },
 ];
 

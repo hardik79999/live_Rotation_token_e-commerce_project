@@ -82,7 +82,7 @@ def list_seller_coupons_action():
     except PermissionError as e:
         return error_response(str(e), 403)
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 # ── POST /api/seller/coupons ──────────────────────────────────
@@ -148,7 +148,7 @@ def create_seller_coupon_action():
         return error_response(str(e), 403)
     except Exception as e:
         db.session.rollback()
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 # ── PUT /api/seller/coupon/<uuid> ─────────────────────────────
@@ -199,7 +199,7 @@ def update_seller_coupon_action(coupon_uuid: str):
         return error_response(str(e), 403)
     except Exception as e:
         db.session.rollback()
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 # ── DELETE /api/seller/coupon/<uuid> ─────────────────────────
@@ -220,4 +220,4 @@ def delete_seller_coupon_action(coupon_uuid: str):
         return error_response(str(e), 403)
     except Exception as e:
         db.session.rollback()
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)

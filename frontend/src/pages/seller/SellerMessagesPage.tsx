@@ -5,12 +5,12 @@
  * Right panel: the active chat window using the same Socket.IO hook.
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { MessageCircle, Search, Send, Wifi, WifiOff } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { useAuthStore } from '@/store/authStore';
 import { getImageUrl } from '@/utils/image';
 import { cn } from '@/utils/cn';
-import { PageSpinner } from '@/components/ui/Spinner';
 import api from '@/api/axios';
 import { CHAT } from '@/api/routes';
 import type { ChatConversation, ChatMessage } from '@/types';

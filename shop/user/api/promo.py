@@ -90,7 +90,7 @@ def validate_promo_action():
         }), 200
 
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 def available_promos_action():
@@ -149,4 +149,4 @@ def available_promos_action():
         return jsonify({'success': True, 'data': result}), 200
 
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)

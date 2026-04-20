@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { useNavigate } from 'react-router-dom';
 import {
   Users, TrendingUp, Package, ShoppingBag, Search,
@@ -11,7 +12,6 @@ import { formatPrice, formatDate } from '@/utils/image';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { cn } from '@/utils/cn';
 import toast from 'react-hot-toast';
 

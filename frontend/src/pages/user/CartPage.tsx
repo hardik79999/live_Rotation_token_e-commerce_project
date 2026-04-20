@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
+import { PageSpinner } from '@/components/ui/Spinner';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, RefreshCw, TrendingUp } from 'lucide-react';
 import { cartApi, browseApi } from '@/api/user';
 import type { CartItem, Product, PromoValidateResponse } from '@/types';
 import { getImageUrl } from '@/utils/image';
 import { Button } from '@/components/ui/Button';
-import { PageSpinner } from '@/components/ui/Spinner';
 import { ProductCard } from '@/components/product/ProductCard';
 import { ProductGridSkeleton } from '@/components/ui/Skeleton';
 import { PromoCodeInput } from '@/components/cart/PromoCodeInput';

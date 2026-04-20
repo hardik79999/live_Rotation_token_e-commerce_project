@@ -43,7 +43,7 @@ def get_categories_action():
             status_code=200,
         )
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 def get_products_action():
@@ -108,7 +108,7 @@ def get_products_action():
             current_page=paginated.page,
         )
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
 
 
 def get_single_product_action(product_uuid):
@@ -140,4 +140,4 @@ def get_single_product_action(product_uuid):
             status_code=200,
         )
     except Exception as e:
-        return error_response(str(e), 500)
+        return error_response("An error occurred. Please try again.", 500)
