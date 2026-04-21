@@ -267,9 +267,9 @@ export function ExpandedAnalyticsModal({
   if (!mounted) return null;
 
   // ── Derived summary stats ─────────────────────────────────────────────────
-  const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
-  const totalOrders  = data.reduce((s, d) => s + d.orders, 0);
-  const peakRevenue  = Math.max(...data.map(d => d.revenue), 0);
+  const totalRevenue = data.reduce((s, d) => s + (isFinite(d.revenue) ? d.revenue : 0), 0);
+  const totalOrders  = data.reduce((s, d) => s + (isFinite(d.orders)  ? d.orders  : 0), 0);
+  const peakRevenue  = data.length > 0 ? Math.max(...data.map(d => isFinite(d.revenue) ? d.revenue : 0)) : 0;
   const peakPoint    = data.find(d => d.revenue === peakRevenue);
   const avgRevenue   = data.length > 0 ? totalRevenue / data.length : 0;
 
@@ -277,8 +277,8 @@ export function ExpandedAnalyticsModal({
   let periodGrowth: number | null = null;
   if (data.length >= 2) {
     const half = Math.floor(data.length / 2);
-    const firstHalf  = data.slice(0, half).reduce((s, d) => s + (metric === 'revenue' ? d.revenue : d.orders), 0);
-    const secondHalf = data.slice(half).reduce((s, d) => s + (metric === 'revenue' ? d.revenue : d.orders), 0);
+    const firstHalf  = data.slice(0, half).reduce((s, d) => s + (metric === 'revenue' ? (isFinite(d.revenue) ? d.revenue : 0) : (isFinite(d.orders) ? d.orders : 0)), 0);
+    const secondHalf = data.slice(half).reduce((s, d) => s + (metric === 'revenue' ? (isFinite(d.revenue) ? d.revenue : 0) : (isFinite(d.orders) ? d.orders : 0)), 0);
     if (firstHalf > 0) periodGrowth = ((secondHalf - firstHalf) / firstHalf) * 100;
     else if (secondHalf > 0) periodGrowth = 100;
     else periodGrowth = 0;

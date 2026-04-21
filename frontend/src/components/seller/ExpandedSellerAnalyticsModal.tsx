@@ -255,17 +255,17 @@ export function ExpandedSellerAnalyticsModal({
   if (!mounted) return null;
 
   // ── Derived stats ─────────────────────────────────────────────────────────
-  const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
-  const totalOrders  = data.reduce((s, d) => s + d.orders, 0);
-  const peakRevenue  = Math.max(...data.map(d => d.revenue), 0);
+  const totalRevenue = data.reduce((s, d) => s + (isFinite(d.revenue) ? d.revenue : 0), 0);
+  const totalOrders  = data.reduce((s, d) => s + (isFinite(d.orders)  ? d.orders  : 0), 0);
+  const peakRevenue  = data.length > 0 ? Math.max(...data.map(d => isFinite(d.revenue) ? d.revenue : 0)) : 0;
   const peakPoint    = data.find(d => d.revenue === peakRevenue);
   const avgRevenue   = data.length > 0 ? totalRevenue / data.length : 0;
 
   let periodGrowth: number | null = null;
   if (data.length >= 2) {
     const half = Math.floor(data.length / 2);
-    const first  = data.slice(0, half).reduce((s, d) => s + (metric === 'revenue' ? d.revenue : d.orders), 0);
-    const second = data.slice(half).reduce((s, d) => s + (metric === 'revenue' ? d.revenue : d.orders), 0);
+    const first  = data.slice(0, half).reduce((s, d) => s + (metric === 'revenue' ? (isFinite(d.revenue) ? d.revenue : 0) : (isFinite(d.orders) ? d.orders : 0)), 0);
+    const second = data.slice(half).reduce((s, d) => s + (metric === 'revenue' ? (isFinite(d.revenue) ? d.revenue : 0) : (isFinite(d.orders) ? d.orders : 0)), 0);
     if (first > 0) periodGrowth = ((second - first) / first) * 100;
     else if (second > 0) periodGrowth = 100;
     else periodGrowth = 0;
@@ -409,14 +409,14 @@ export function ExpandedSellerAnalyticsModal({
               label="Avg / Period"
               value={metric === 'revenue'
                 ? formatPrice(avgRevenue)
-                : `${(totalOrders / Math.max(data.length, 1)).toFixed(1)}`
+                : `${data.length > 0 ? (totalOrders / data.length).toFixed(1) : '0'}`
               }
             />
             <Stat
               label="Peak"
               value={metric === 'revenue'
                 ? formatPrice(peakRevenue)
-                : String(Math.max(...data.map(d => d.orders), 0))
+                : String(data.length > 0 ? Math.max(...data.map(d => isFinite(d.orders) ? d.orders : 0)) : 0)
               }
               sub={peakPoint
                 ? <span className="text-xs text-gray-400 dark:text-slate-500">{peakPoint.full_label}</span>

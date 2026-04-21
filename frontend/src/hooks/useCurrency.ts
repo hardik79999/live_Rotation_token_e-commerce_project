@@ -26,9 +26,10 @@ export function useCurrency() {
    * @param decimals   — override decimal places (default: 0 for INR, 2 for others)
    */
   const fmt = useCallback(
-    (inrAmount: number, decimals?: number): string => {
+    (inrAmount: number | null | undefined, decimals?: number): string => {
+      const safe = (typeof inrAmount === 'number' && isFinite(inrAmount)) ? inrAmount : 0;
       const rate           = rates[currency] ?? 1;
-      const converted      = inrAmount * rate;
+      const converted      = safe * rate;
       const fractionDigits = decimals ?? (currency === 'INR' ? 0 : 2);
 
       try {

@@ -184,9 +184,11 @@ export function CheckoutPage() {
   if (loading) return <PageSpinner />;
 
   // ── Derived totals ────────────────────────────────────────────────────────
-  const deliveryFee    = totalAmount >= 499 ? 0 : 49;
-  const afterCoupon    = appliedPromo ? appliedPromo.final_total : totalAmount;
-  const walletDeduct   = useWallet ? Math.min(walletBalance, afterCoupon) : 0;
+  const safeTotal      = isFinite(totalAmount) ? totalAmount : 0;
+  const deliveryFee    = safeTotal >= 499 ? 0 : 49;
+  const afterCoupon    = appliedPromo ? (appliedPromo.final_total ?? safeTotal) : safeTotal;
+  const safeWallet     = isFinite(walletBalance) ? walletBalance : 0;
+  const walletDeduct   = useWallet ? Math.min(safeWallet, Math.max(0, afterCoupon)) : 0;
   const grandTotal     = Math.max(0, afterCoupon + deliveryFee - walletDeduct);
 
   return (

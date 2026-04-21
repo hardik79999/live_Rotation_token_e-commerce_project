@@ -29,7 +29,7 @@ def _build_invoice_context(order: Order, user: User) -> dict:
     address = Address.query.get(order.address_id)
     address_str = (
         f"{address.full_name}, {address.street}, {address.city}, "
-        f"{address.state} - {address.pincode}  |  📞 {address.phone_number}"
+        f"{address.state} - {address.pincode}  |  Ph: {address.phone_number}"
         if address else "N/A"
     )
 
@@ -46,11 +46,14 @@ def _build_invoice_context(order: Order, user: User) -> dict:
         db.session.commit()
 
     total_amount = float(order.total_amount)
-    base_price   = round(total_amount / 1.18, 2)
-    tax_amount   = round(total_amount - base_price, 2)
-    shipping_fee = 0.0
+    # Items subtotal = sum of (price_at_purchase × qty) — this is the true
+    # pre-tax base. GST 18% is calculated on top of this, so:
+    #   items_subtotal  = sum of line items
+    #   tax_amount      = items_subtotal × 0.18
+    #   grand_total     = items_subtotal + tax_amount + shipping_fee
+    # We do NOT back-calculate from total_amount to avoid rounding drift.
 
-    # Build items list
+    # Build items list first so we can derive the correct subtotal
     items = []
     for oi in order.items:
         p = oi.product
@@ -60,6 +63,13 @@ def _build_invoice_context(order: Order, user: User) -> dict:
             'price':    float(oi.price_at_purchase),
             'subtotal': round(float(oi.price_at_purchase) * oi.quantity, 2),
         })
+
+    items_subtotal = round(sum(i['subtotal'] for i in items), 2)
+    # GST is included in the price — extract it (price = base × 1.18)
+    base_price   = round(items_subtotal / 1.18, 2)
+    tax_amount   = round(items_subtotal - base_price, 2)
+    shipping_fee = 0.0
+    grand_total  = round(items_subtotal + shipping_fee, 2)
 
     return {
         'invoice_number':   db_invoice.invoice_number,
@@ -85,7 +95,7 @@ def _build_invoice_context(order: Order, user: User) -> dict:
         'base_amount':      base_price,
         'tax_amount':       tax_amount,
         'shipping_fee':     shipping_fee,
-        'grand_total':      total_amount,
+        'grand_total':      grand_total,
         'company_name':     current_app.config.get('COMPANY_NAME', 'ShopHub Pvt. Ltd.'),
         'support_email':    current_app.config.get('SUPPORT_EMAIL', 'support@shophub.in'),
         'gstin':            current_app.config.get('COMPANY_GSTIN', '22AAAAA0000A1Z5'),

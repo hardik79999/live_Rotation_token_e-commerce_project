@@ -50,23 +50,29 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
   cancelled:  <XCircle size={13} className="text-red-500" />,
 };
 
-// ── Metric card (identical to SellerDetailPage) ───────────────────────────────
-function MetricCard({ label, value, icon, bg, color }: {
+// ── Metric card — same minimal tinted style as AdminDashboardPage ─────────────
+function MetricCard({ label, value, icon, accent, sub }: {
   label: string;
   value: string | number;
   icon: React.ReactNode;
-  bg: string;
-  color: string;
+  accent: 'blue' | 'violet' | 'orange' | 'emerald';
+  sub?: string;
 }) {
+  const styles = {
+    blue:    { wrap: 'bg-blue-50    dark:bg-blue-500/10   border-blue-100    dark:border-blue-500/20',   icon: 'bg-blue-100    dark:bg-blue-500/20   text-blue-600    dark:text-blue-400',   val: 'text-blue-700    dark:text-blue-300'   },
+    violet:  { wrap: 'bg-violet-50  dark:bg-violet-500/10 border-violet-100  dark:border-violet-500/20', icon: 'bg-violet-100  dark:bg-violet-500/20 text-violet-600  dark:text-violet-400', val: 'text-violet-700  dark:text-violet-300' },
+    orange:  { wrap: 'bg-orange-50  dark:bg-orange-500/10 border-orange-100  dark:border-orange-500/20', icon: 'bg-orange-100  dark:bg-orange-500/20 text-orange-600  dark:text-orange-400', val: 'text-orange-700  dark:text-orange-300' },
+    emerald: { wrap: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20', icon: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400', val: 'text-emerald-700 dark:text-emerald-300' },
+  }[accent];
+
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 flex items-center gap-3">
-      <div className={`p-2.5 rounded-xl ${bg} shrink-0`}>
-        <div className={color}>{icon}</div>
+    <div className={cn('rounded-2xl p-5 border', styles.wrap)}>
+      <div className="flex items-start justify-between mb-3">
+        <p className="text-sm font-medium text-gray-500 dark:text-slate-400">{label}</p>
+        <div className={cn('p-2 rounded-xl', styles.icon)}>{icon}</div>
       </div>
-      <div className="min-w-0">
-        <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{label}</p>
-        <p className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">{value}</p>
-      </div>
+      <p className={cn('text-3xl font-bold tracking-tight', styles.val)}>{value}</p>
+      {sub && <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{sub}</p>}
     </div>
   );
 }
@@ -135,11 +141,11 @@ export function SellerOverviewPage() {
   if (loadingMain) return <PageSpinner />;
 
   // ── Derived metrics ───────────────────────────────────────────────────────
-  const activeProducts  = products.filter(p => p.is_active).length;
+  const activeProducts     = products.filter(p => p.is_active).length;
   const nonCancelledOrders = orders.filter(o => o.status !== 'cancelled');
-  const totalOrders     = orders.length;
-  const totalRevenue    = nonCancelledOrders.reduce((s, o) => s + o.seller_total, 0);
-  const avgOrderValue   = nonCancelledOrders.length > 0
+  const totalOrders        = orders.length;
+  const totalRevenue       = nonCancelledOrders.reduce((s, o) => s + (isFinite(o.seller_total) ? o.seller_total : 0), 0);
+  const avgOrderValue      = nonCancelledOrders.length > 0
     ? totalRevenue / nonCancelledOrders.length
     : 0;
 
@@ -158,8 +164,8 @@ export function SellerOverviewPage() {
           units:   0,
         };
       }
-      productRevMap[item.product_uuid].revenue += item.subtotal;
-      productRevMap[item.product_uuid].units   += item.quantity;
+      productRevMap[item.product_uuid].revenue += isFinite(item.subtotal) ? item.subtotal : 0;
+      productRevMap[item.product_uuid].units   += isFinite(item.quantity) ? item.quantity : 0;
     });
   });
   const topProducts = Object.entries(productRevMap)
@@ -257,29 +263,29 @@ export function SellerOverviewPage() {
           label="Active Products"
           value={activeProducts}
           icon={<Package size={18} />}
-          bg="bg-blue-50 dark:bg-blue-500/10"
-          color="text-blue-500"
+          accent="blue"
+          sub="Live listings"
         />
         <MetricCard
           label="Total Orders"
           value={totalOrders}
           icon={<ShoppingBag size={18} />}
-          bg="bg-orange-50 dark:bg-orange-500/10"
-          color="text-orange-500"
+          accent="orange"
+          sub="All time"
         />
         <MetricCard
           label="Total Revenue"
           value={formatPrice(totalRevenue)}
           icon={<TrendingUp size={18} />}
-          bg="bg-green-50 dark:bg-green-500/10"
-          color="text-green-500"
+          accent="emerald"
+          sub="Completed payments"
         />
         <MetricCard
           label="Avg Order Value"
           value={formatPrice(avgOrderValue)}
           icon={<Star size={18} />}
-          bg="bg-purple-50 dark:bg-purple-500/10"
-          color="text-purple-500"
+          accent="violet"
+          sub="Per order"
         />
       </div>
 

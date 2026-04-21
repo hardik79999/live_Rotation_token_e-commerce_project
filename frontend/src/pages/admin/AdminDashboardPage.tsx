@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users, Package, ShoppingBag, TrendingUp, Plus,
   CheckCircle, Clock, Truck, XCircle, RefreshCw,
   ArrowRight, BarChart3, DollarSign, Activity,
-  Star, AlertTriangle, Eye,
+  Star, AlertTriangle, Eye, Search, Smile, Image, Type,
+  Laptop, Shirt, Dumbbell, BookOpen, Home, Car, Baby,
+  Utensils, Gamepad2, Music, Camera, Headphones, Watch,
+  Gem, Flower2, Leaf, Zap, Globe, Heart, Gift, Coffee,
+  Bike, Plane, Palette, Scissors, Wrench, Pill,
 } from 'lucide-react';
 import { adminApi } from '@/api/admin';
 import { formatPrice, formatDate, getImageUrl } from '@/utils/image';
@@ -72,31 +76,30 @@ function DashboardSkeleton() {
 
 // ── Stat card ─────────────────────────────────────────────────
 function StatCard({
-  title, value, icon, gradient, sub,
+  title, value, icon, accent, sub,
 }: {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  gradient: string;
+  /** Tailwind color name: 'blue' | 'violet' | 'orange' | 'emerald' */
+  accent: 'blue' | 'violet' | 'orange' | 'emerald';
   sub?: string;
 }) {
-  return (
-    <div className={cn(
-      'rounded-2xl p-5 text-white relative overflow-hidden',
-      gradient,
-    )}>
-      {/* Background decoration */}
-      <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/10" />
-      <div className="absolute -right-2 -bottom-6 w-16 h-16 rounded-full bg-white/10" />
+  const styles = {
+    blue:    { wrap: 'bg-blue-50    dark:bg-blue-500/10   border-blue-100    dark:border-blue-500/20',   icon: 'bg-blue-100    dark:bg-blue-500/20   text-blue-600    dark:text-blue-400',   val: 'text-blue-700    dark:text-blue-300'   },
+    violet:  { wrap: 'bg-violet-50  dark:bg-violet-500/10 border-violet-100  dark:border-violet-500/20', icon: 'bg-violet-100  dark:bg-violet-500/20 text-violet-600  dark:text-violet-400', val: 'text-violet-700  dark:text-violet-300' },
+    orange:  { wrap: 'bg-orange-50  dark:bg-orange-500/10 border-orange-100  dark:border-orange-500/20', icon: 'bg-orange-100  dark:bg-orange-500/20 text-orange-600  dark:text-orange-400', val: 'text-orange-700  dark:text-orange-300' },
+    emerald: { wrap: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20', icon: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400', val: 'text-emerald-700 dark:text-emerald-300' },
+  }[accent];
 
-      <div className="relative">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-white/80">{title}</p>
-          <div className="p-2 bg-white/20 rounded-xl">{icon}</div>
-        </div>
-        <p className="text-3xl font-bold tracking-tight">{value}</p>
-        {sub && <p className="text-xs text-white/70 mt-1">{sub}</p>}
+  return (
+    <div className={cn('rounded-2xl p-5 border', styles.wrap)}>
+      <div className="flex items-start justify-between mb-3">
+        <p className="text-sm font-medium text-gray-500 dark:text-slate-400">{title}</p>
+        <div className={cn('p-2 rounded-xl', styles.icon)}>{icon}</div>
       </div>
+      <p className={cn('text-3xl font-bold tracking-tight', styles.val)}>{value}</p>
+      {sub && <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{sub}</p>}
     </div>
   );
 }
@@ -191,6 +194,281 @@ function DonutRing({ data }: { data: Record<string, number> }) {
   );
 }
 
+// ── Icon Picker ───────────────────────────────────────────────
+type IconTab = 'emoji' | 'lucide' | 'url';
+
+const EMOJI_GROUPS = [
+  { label: 'Popular', icons: ['📱','💻','🖥️','⌨️','🖱️','🎮','📷','🎧','⌚','📺','🔌','💡'] },
+  { label: 'Shopping', icons: ['🛍️','🛒','💳','🏷️','🎁','💰','💎','👜','👟','👗','🧴','🧸'] },
+  { label: 'Food', icons: ['🍕','🍔','🍜','🍣','☕','🍰','🥗','🍷','🧃','🍫','🥩','🌮'] },
+  { label: 'Sports', icons: ['⚽','🏀','🎾','🏋️','🚴','🏊','🎯','🏆','🥊','⛷️','🏄','🎿'] },
+  { label: 'Home', icons: ['🏠','🛋️','🪴','🛏️','🚿','🪑','🧹','🔑','🪟','🏡','🛁','🪞'] },
+  { label: 'Health', icons: ['💊','🩺','🏥','🧬','💉','🩹','🧘','🥦','🫀','🦷','👁️','🧠'] },
+  { label: 'Travel', icons: ['✈️','🚗','🚢','🏖️','🗺️','🧳','🏔️','🚂','🛵','🚁','⛵','🏕️'] },
+  { label: 'Art', icons: ['🎨','🎭','🎬','🎵','📚','✏️','🖌️','📸','🎤','🎻','🎹','🎲'] },
+];
+
+const LUCIDE_ICONS: { name: string; icon: React.ReactNode; label: string }[] = [
+  { name: 'Laptop',     icon: <Laptop size={20} />,     label: 'Electronics'  },
+  { name: 'Shirt',      icon: <Shirt size={20} />,      label: 'Fashion'      },
+  { name: 'Dumbbell',   icon: <Dumbbell size={20} />,   label: 'Sports'       },
+  { name: 'BookOpen',   icon: <BookOpen size={20} />,   label: 'Books'        },
+  { name: 'Home',       icon: <Home size={20} />,       label: 'Home'         },
+  { name: 'Car',        icon: <Car size={20} />,        label: 'Automotive'   },
+  { name: 'Baby',       icon: <Baby size={20} />,       label: 'Kids'         },
+  { name: 'Utensils',   icon: <Utensils size={20} />,   label: 'Food'         },
+  { name: 'Gamepad2',   icon: <Gamepad2 size={20} />,   label: 'Gaming'       },
+  { name: 'Music',      icon: <Music size={20} />,      label: 'Music'        },
+  { name: 'Camera',     icon: <Camera size={20} />,     label: 'Photography'  },
+  { name: 'Headphones', icon: <Headphones size={20} />, label: 'Audio'        },
+  { name: 'Watch',      icon: <Watch size={20} />,      label: 'Watches'      },
+  { name: 'Gem',        icon: <Gem size={20} />,        label: 'Jewellery'    },
+  { name: 'Flower2',    icon: <Flower2 size={20} />,    label: 'Beauty'       },
+  { name: 'Leaf',       icon: <Leaf size={20} />,       label: 'Organic'      },
+  { name: 'Zap',        icon: <Zap size={20} />,        label: 'Deals'        },
+  { name: 'Globe',      icon: <Globe size={20} />,      label: 'Global'       },
+  { name: 'Heart',      icon: <Heart size={20} />,      label: 'Health'       },
+  { name: 'Gift',       icon: <Gift size={20} />,       label: 'Gifts'        },
+  { name: 'Coffee',     icon: <Coffee size={20} />,     label: 'Beverages'    },
+  { name: 'Bike',       icon: <Bike size={20} />,       label: 'Cycling'      },
+  { name: 'Plane',      icon: <Plane size={20} />,      label: 'Travel'       },
+  { name: 'Palette',    icon: <Palette size={20} />,    label: 'Art'          },
+  { name: 'Scissors',   icon: <Scissors size={20} />,   label: 'Salon'        },
+  { name: 'Wrench',     icon: <Wrench size={20} />,     label: 'Tools'        },
+  { name: 'Pill',       icon: <Pill size={20} />,       label: 'Pharmacy'     },
+  { name: 'Package',    icon: <Package size={20} />,    label: 'General'      },
+];
+
+function IconPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [tab, setTab]         = useState<IconTab>('emoji');
+  const [search, setSearch]   = useState('');
+  const [urlInput, setUrlInput] = useState('');
+  const [urlError, setUrlError] = useState('');
+  const urlRef = useRef<HTMLInputElement>(null);
+
+  const filteredEmojis = search.trim()
+    ? EMOJI_GROUPS.flatMap(g => g.icons).filter((_, i) =>
+        // simple index-based filter — emoji search by group label
+        EMOJI_GROUPS.some(g =>
+          g.label.toLowerCase().includes(search.toLowerCase()) && g.icons.includes(EMOJI_GROUPS.flatMap(x => x.icons)[i])
+        )
+      )
+    : null;
+
+  const filteredLucide = LUCIDE_ICONS.filter(l =>
+    !search.trim() || l.label.toLowerCase().includes(search.toLowerCase()) || l.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleUrlApply = () => {
+    const v = urlInput.trim();
+    if (!v) { setUrlError('Enter an image URL'); return; }
+    if (!/^https?:\/\/.+\.(png|jpg|jpeg|gif|svg|webp|ico)(\?.*)?$/i.test(v)) {
+      setUrlError('Must be a direct image URL (.png, .jpg, .svg, .gif, .webp)');
+      return;
+    }
+    setUrlError('');
+    onChange(v);
+  };
+
+  // Detect if current value is a URL
+  const isUrl = value.startsWith('http');
+
+  return (
+    <div className="space-y-3">
+      {/* Preview */}
+      <div className="flex items-center gap-3">
+        <div className="w-14 h-14 rounded-2xl border-2 border-orange-300 dark:border-orange-500/50 bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center shrink-0 overflow-hidden">
+          {!value ? (
+            <Smile size={22} className="text-orange-300 dark:text-orange-500/50" />
+          ) : isUrl ? (
+            <img src={value} alt="icon" className="w-10 h-10 object-contain" onError={() => onChange('')} />
+          ) : value.length <= 4 ? (
+            <span className="text-3xl leading-none">{value}</span>
+          ) : (
+            <span className="text-orange-500 dark:text-orange-400"><Package size={22} /></span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Selected Icon</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 truncate">
+            {!value ? 'None selected' : isUrl ? 'Custom image URL' : `Emoji: ${value}`}
+          </p>
+          {value && (
+            <button
+              type="button"
+              onClick={() => { onChange(''); setUrlInput(''); }}
+              className="text-xs text-red-400 hover:text-red-600 mt-1 transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-slate-700/50 rounded-xl">
+        {([
+          { id: 'emoji',  label: 'Emoji',  Icon: Smile },
+          { id: 'lucide', label: 'Icons',  Icon: Type  },
+          { id: 'url',    label: 'Image',  Icon: Image },
+        ] as { id: IconTab; label: string; Icon: React.ElementType }[]).map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => { setTab(id); setSearch(''); }}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all',
+              tab === id
+                ? 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 shadow-sm'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300',
+            )}
+          >
+            <Icon size={13} /> {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search — shown for emoji + lucide tabs */}
+      {tab !== 'url' && (
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
+          <input
+            type="text"
+            placeholder={tab === 'emoji' ? 'Search category (food, sports…)' : 'Search icon name…'}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-8 pr-3 py-2 text-xs border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
+          />
+        </div>
+      )}
+
+      {/* ── Emoji tab ── */}
+      {tab === 'emoji' && (
+        <div className="max-h-52 overflow-y-auto space-y-3 pr-1">
+          {(search.trim()
+            ? EMOJI_GROUPS.filter(g => g.label.toLowerCase().includes(search.toLowerCase()))
+            : EMOJI_GROUPS
+          ).map((group) => (
+            <div key={group.label}>
+              <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wide mb-1.5">
+                {group.label}
+              </p>
+              <div className="grid grid-cols-8 gap-1">
+                {group.icons.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => onChange(emoji)}
+                    className={cn(
+                      'w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95',
+                      value === emoji
+                        ? 'bg-orange-100 dark:bg-orange-500/20 ring-2 ring-orange-400 dark:ring-orange-500'
+                        : 'hover:bg-gray-100 dark:hover:bg-slate-700',
+                    )}
+                    title={emoji}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          {search.trim() && EMOJI_GROUPS.filter(g => g.label.toLowerCase().includes(search.toLowerCase())).length === 0 && (
+            <p className="text-xs text-gray-400 dark:text-slate-500 text-center py-4">No groups match "{search}"</p>
+          )}
+        </div>
+      )}
+
+      {/* ── Lucide tab ── */}
+      {tab === 'lucide' && (
+        <div className="max-h-52 overflow-y-auto pr-1">
+          <div className="grid grid-cols-4 gap-1.5">
+            {filteredLucide.map((item) => (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => onChange(item.name)}
+                className={cn(
+                  'flex flex-col items-center gap-1 p-2 rounded-xl border transition-all hover:scale-105 active:scale-95',
+                  value === item.name
+                    ? 'border-orange-400 dark:border-orange-500 bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400'
+                    : 'border-gray-100 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-500/40 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50',
+                )}
+                title={item.label}
+              >
+                {item.icon}
+                <span className="text-[9px] font-medium truncate w-full text-center leading-tight">{item.label}</span>
+              </button>
+            ))}
+          </div>
+          {filteredLucide.length === 0 && (
+            <p className="text-xs text-gray-400 dark:text-slate-500 text-center py-4">No icons match "{search}"</p>
+          )}
+        </div>
+      )}
+
+      {/* ── URL tab ── */}
+      {tab === 'url' && (
+        <div className="space-y-3">
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Paste a direct image URL — supports PNG, JPG, SVG, GIF, WebP from any source.
+          </p>
+          <div className="flex gap-2">
+            <input
+              ref={urlRef}
+              type="url"
+              placeholder="https://example.com/icon.png"
+              value={urlInput}
+              onChange={(e) => { setUrlInput(e.target.value); setUrlError(''); }}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleUrlApply())}
+              className="flex-1 border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 text-xs bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors"
+            />
+            <button
+              type="button"
+              onClick={handleUrlApply}
+              className="px-3 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold transition-colors shrink-0"
+            >
+              Apply
+            </button>
+          </div>
+          {urlError && <p className="text-xs text-red-500">{urlError}</p>}
+          {/* Quick suggestions */}
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wide mb-2">
+              Quick — paste from these sources
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: 'Flaticon',   url: 'https://www.flaticon.com' },
+                { label: 'Icons8',     url: 'https://icons8.com' },
+                { label: 'SVGRepo',    url: 'https://www.svgrepo.com' },
+                { label: 'Iconfinder', url: 'https://www.iconfinder.com' },
+              ].map((s) => (
+                <a
+                  key={s.label}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] px-2 py-1 rounded-md bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                >
+                  {s.label} ↗
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   pending:    <Clock size={14} className="text-yellow-500" />,
   processing: <Package size={14} className="text-blue-500" />,
@@ -199,7 +477,6 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   cancelled:  <XCircle size={14} className="text-red-500" />,
 };
 
-// ── Main page ─────────────────────────────────────────────────
 export function AdminDashboardPage() {
   const [data,    setData]    = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -268,28 +545,28 @@ export function AdminDashboardPage() {
           title="Total Users"
           value={data?.total_users ?? 0}
           icon={<Users size={18} />}
-          gradient="bg-gradient-to-br from-blue-500 to-blue-700"
+          accent="blue"
           sub="Active accounts"
         />
         <StatCard
           title="Total Products"
           value={data?.total_products ?? 0}
           icon={<Package size={18} />}
-          gradient="bg-gradient-to-br from-violet-500 to-violet-700"
+          accent="violet"
           sub="Live listings"
         />
         <StatCard
           title="Total Orders"
           value={data?.total_orders ?? 0}
           icon={<ShoppingBag size={18} />}
-          gradient="bg-gradient-to-br from-orange-500 to-orange-600"
+          accent="orange"
           sub={`${fulfillmentRate}% fulfilled`}
         />
         <StatCard
           title="Total Revenue"
           value={formatPrice(data?.total_revenue ?? 0)}
           icon={<DollarSign size={18} />}
-          gradient="bg-gradient-to-br from-emerald-500 to-emerald-700"
+          accent="emerald"
           sub="Completed payments"
         />
       </div>
@@ -475,94 +752,119 @@ export function AdminDashboardPage() {
             desc:  'Review seller category approvals',
             to:    '/admin/category-requests',
             icon:  <AlertTriangle size={20} />,
-            from:  'from-orange-500', to_: 'to-orange-600',
+            accent: 'orange' as const,
           },
           {
             title: 'Seller Surveillance',
             desc:  'Monitor revenue and activity',
             to:    '/admin/sellers',
             icon:  <Eye size={20} />,
-            from:  'from-blue-600', to_: 'to-blue-700',
+            accent: 'blue' as const,
           },
           {
             title: 'Product Directory',
             desc:  'Browse all platform products',
             to:    '/admin/products',
             icon:  <Package size={20} />,
-            from:  'from-slate-700', to_: 'to-slate-800',
+            accent: 'violet' as const,
           },
           {
             title: 'Manage Categories',
             desc:  'Edit icons, names and status',
             to:    '/admin/categories',
             icon:  <BarChart3 size={20} />,
-            from:  'from-violet-600', to_: 'to-violet-700',
+            accent: 'emerald' as const,
           },
-        ].map((card) => (
-          <div
-            key={card.title}
-            className={cn('rounded-2xl p-5 text-white bg-gradient-to-br', card.from, card.to_)}
-          >
-            <div className="p-2 bg-white/20 rounded-xl w-fit mb-3">{card.icon}</div>
-            <h3 className="font-bold text-base mb-1">{card.title}</h3>
-            <p className="text-white/70 text-xs mb-4">{card.desc}</p>
-            <Link
-              to={card.to}
-              className="inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-            >
-              Open <ArrowRight size={12} />
-            </Link>
-          </div>
-        ))}
+        ].map((card) => {
+          const styles = {
+            orange:  { wrap: 'bg-orange-50  dark:bg-orange-500/10  border-orange-100  dark:border-orange-500/20',  icon: 'bg-orange-100  dark:bg-orange-500/20  text-orange-600  dark:text-orange-400',  link: 'text-orange-600  dark:text-orange-400  hover:bg-orange-100  dark:hover:bg-orange-500/20'  },
+            blue:    { wrap: 'bg-blue-50    dark:bg-blue-500/10    border-blue-100    dark:border-blue-500/20',    icon: 'bg-blue-100    dark:bg-blue-500/20    text-blue-600    dark:text-blue-400',    link: 'text-blue-600    dark:text-blue-400    hover:bg-blue-100    dark:hover:bg-blue-500/20'    },
+            violet:  { wrap: 'bg-violet-50  dark:bg-violet-500/10  border-violet-100  dark:border-violet-500/20',  icon: 'bg-violet-100  dark:bg-violet-500/20  text-violet-600  dark:text-violet-400',  link: 'text-violet-600  dark:text-violet-400  hover:bg-violet-100  dark:hover:bg-violet-500/20'  },
+            emerald: { wrap: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20', icon: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400', link: 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20' },
+          }[card.accent];
+          return (
+            <div key={card.title} className={cn('rounded-2xl p-5 border', styles.wrap)}>
+              <div className={cn('p-2 rounded-xl w-fit mb-3', styles.icon)}>{card.icon}</div>
+              <h3 className="font-bold text-base mb-1 text-gray-900 dark:text-slate-100">{card.title}</h3>
+              <p className="text-gray-500 dark:text-slate-400 text-xs mb-4">{card.desc}</p>
+              <Link
+                to={card.to}
+                className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors', styles.link)}
+              >
+                Open <ArrowRight size={12} />
+              </Link>
+            </div>
+          );
+        })}
       </div>
 
       {/* ── Create Category Modal ── */}
-      <Modal isOpen={showCatModal} onClose={() => setShowCatModal(false)} title="Create New Category">
-        <form onSubmit={handleCreateCategory} className="space-y-4">
-          <div className="flex gap-3">
-            <div className="w-20 shrink-0">
-              <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">Icon</label>
-              <input
-                type="text"
-                maxLength={4}
-                placeholder="📱"
-                value={catForm.icon}
-                onChange={(e) => setCatForm({ ...catForm, icon: e.target.value })}
-                className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2.5 text-2xl text-center bg-white dark:bg-slate-800 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 transition-colors"
-              />
-            </div>
-            <div className="flex-1">
-              <Input
-                label="Category Name"
-                placeholder="e.g. Electronics"
-                value={catForm.name}
-                onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
-                required
-              />
-            </div>
-          </div>
+      <Modal isOpen={showCatModal} onClose={() => { setShowCatModal(false); setCatForm({ name: '', description: '', icon: '' }); }} title="Create New Category" size="lg">
+        <form onSubmit={handleCreateCategory} className="space-y-5">
+
+          {/* Icon picker */}
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">Description (optional)</label>
+            <label className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3 block">
+              Category Icon
+            </label>
+            <IconPicker
+              value={catForm.icon}
+              onChange={(v) => setCatForm({ ...catForm, icon: v })}
+            />
+          </div>
+
+          {/* Name */}
+          <Input
+            label="Category Name"
+            placeholder="e.g. Electronics"
+            value={catForm.name}
+            onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
+            required
+          />
+
+          {/* Description */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 block">
+              Description <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
             <textarea
               value={catForm.description}
               onChange={(e) => setCatForm({ ...catForm, description: e.target.value })}
-              rows={3}
+              rows={2}
               placeholder="Brief description of this category..."
               className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 resize-none transition-colors"
             />
           </div>
-          {/* Preview */}
+
+          {/* Live preview */}
           {(catForm.icon || catForm.name) && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-200 dark:border-orange-500/30">
-              {catForm.icon && <span className="text-xl">{catForm.icon}</span>}
-              <span className="text-sm font-medium text-orange-700 dark:text-orange-400">
-                {catForm.name || 'Category name'}
-              </span>
+            <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 dark:bg-orange-500/10 rounded-xl border border-orange-200 dark:border-orange-500/30">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-500/30 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                {catForm.icon.startsWith('http') ? (
+                  <img src={catForm.icon} alt="icon" className="w-7 h-7 object-contain" />
+                ) : catForm.icon ? (
+                  <span className="text-2xl leading-none">{catForm.icon}</span>
+                ) : (
+                  <Package size={18} className="text-orange-400" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-orange-500 dark:text-orange-400 font-semibold uppercase tracking-wide">Preview</p>
+                <p className="text-sm font-bold text-orange-700 dark:text-orange-300 truncate">
+                  {catForm.name || 'Category name'}
+                </p>
+              </div>
             </div>
           )}
-          <div className="flex gap-3">
-            <Button type="button" variant="ghost" onClick={() => setShowCatModal(false)} className="flex-1">Cancel</Button>
-            <Button type="submit" loading={savingCat} className="flex-1">Create Category</Button>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-1">
+            <Button type="button" variant="ghost" onClick={() => { setShowCatModal(false); setCatForm({ name: '', description: '', icon: '' }); }} className="flex-1">
+              Cancel
+            </Button>
+            <Button type="submit" loading={savingCat} className="flex-1">
+              Create Category
+            </Button>
           </div>
         </form>
       </Modal>

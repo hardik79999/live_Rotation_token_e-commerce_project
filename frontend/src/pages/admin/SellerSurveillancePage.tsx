@@ -167,9 +167,9 @@ export function SellerSurveillancePage() {
   };
 
   // Summary stats
-  const totalRevenue  = sellers.reduce((s, x) => s + x.total_revenue, 0);
+  const totalRevenue  = sellers.reduce((s, x) => s + (isFinite(x.total_revenue) ? x.total_revenue : 0), 0);
   const activeSellers = sellers.filter(s => s.is_active).length;
-  const totalProducts = sellers.reduce((s, x) => s + x.total_products, 0);
+  const totalProducts = sellers.reduce((s, x) => s + (isFinite(x.total_products) ? x.total_products : 0), 0);
 
   if (loading) return <PageSpinner />;
 

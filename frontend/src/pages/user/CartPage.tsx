@@ -304,7 +304,7 @@ export function CartPage() {
                   {deliveryFee === 0 ? 'FREE' : fmt(deliveryFee)}
                 </span>
               </div>
-              {deliveryFee > 0 && (
+              {deliveryFee > 0 && totalAmount < 499 && (
                 <p className="text-xs text-gray-400 dark:text-slate-500">
                   Add {fmt(499 - totalAmount)} more for free delivery
                 </p>

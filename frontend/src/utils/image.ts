@@ -13,16 +13,20 @@ export function getImageUrl(path: string | null | undefined): string {
   return `${BASE}${path}`;
 }
 
-export function formatPrice(amount: number): string {
+export function formatPrice(amount: number | null | undefined): string {
+  const safe = (typeof amount === 'number' && isFinite(amount)) ? amount : 0;
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(safe);
 }
 
-export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-IN', {
+export function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
